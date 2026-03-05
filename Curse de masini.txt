@@ -1,0 +1,119 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+/* 1 */
+void afisareTimpi(int *timpi, int n)
+{
+    for (int i = 0; i < n; i++)
+        printf("%d\n", timpi[i]);
+}
+
+/* 2 */
+double medieTimpi(int *timpi, int n)
+{
+    double s = 0;
+    for (int i = 0; i < n; i++)
+        s += timpi[i];
+    return s / n;
+}
+
+/* 3 */
+void afisareCalificati(int *timpi, int n)
+{
+    int calificati[4];
+    int gasiti = 0;
+
+    for (int i = 0; i < n && gasiti < 4; i++) {
+        int maiMic = 0;
+        for (int j = 0; j < n; j++) {
+            if (timpi[j] < timpi[i])
+                maiMic++;
+        }
+        if (maiMic < 4) {
+            calificati[gasiti++] = timpi[i];
+        }
+    }
+
+    for (int i = 0; i < gasiti; i++)
+        printf("%d\n", calificati[i]);
+}
+
+/* 4 */
+void cursaEliminare(int *timpi, int n)
+{
+    int activ[100];
+    for (int i = 0; i < n; i++)
+        activ[i] = 1;
+
+    int ramasi = n;
+
+    while (ramasi > 0) {
+        int max = -1, idx = -1;
+        for (int i = 0; i < n; i++) {
+            if (activ[i] && timpi[i] > max) {
+                max = timpi[i];
+                idx = i;
+            }
+        }
+        printf("%d\n", timpi[idx]);
+        activ[idx] = 0;
+        ramasi--;
+    }
+}
+
+/* 5 (bonus) */
+void sanseCastig(int *timpi, int n)
+{
+    int calificati[4];
+    int k = 0;
+
+    for (int i = 0; i < n && k < 4; i++) {
+        int maiMic = 0;
+        for (int j = 0; j < n; j++)
+            if (timpi[j] < timpi[i])
+                maiMic++;
+        if (maiMic < 4)
+            calificati[k++] = timpi[i];
+    }
+
+    int baza = calificati[0];
+
+    for (int i = 1; i < 4; i++) {
+        int castig = 0;
+        for (int t = baza - 5; t <= baza + 4; t++) {
+            if (t <= calificati[i])
+                castig++;
+        }
+        printf("%.2f\n", castig * 10.0);
+    }
+}
+
+int main(void)
+{
+    int comanda;
+    int timpi[100];
+    int n = 0;
+
+    scanf("%d", &comanda);
+
+    while (scanf("%d", &timpi[n]) == 1)
+        n++;
+
+    if (comanda == 1) {
+        afisareTimpi(timpi, n);
+    }
+    else if (comanda == 2) {
+        printf("%.2f\n", medieTimpi(timpi, n));
+    }
+    else if (comanda == 3) {
+        afisareCalificati(timpi, n);
+    }
+    else if (comanda == 4) {
+        cursaEliminare(timpi, n);
+    }
+    else if (comanda == 5) {
+        sanseCastig(timpi, n);
+    }
+
+    return 0;
+}

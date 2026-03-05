@@ -1,0 +1,237 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Person {
+    char name[21];
+    char cnp[14];            // 13 cifre + '\0'
+    struct Person *next;     // pentru stiva (chaining)
+} Person;
+
+typedef struct {
+    Person **buckets;
+    int cap;
+    int key;                 // cheia de control
+} HashMap;
+
+/* --------- utilitare CNP / hash --------- */
+
+static long last6(const char *cnp) {
+    // ultimele 6 cifre: cnp[7..12]
+    char buf[7];
+    memcpy(buf, cnp + 7, 6);
+    buf[6] = '\0';
+    return strtol(buf, NULL, 10);
+}
+
+static int hash_idx_cnp(const char *cnp, int key, int cap) {
+    long v = last6(cnp) * (long)key;
+    long r = v % cap;
+    if (r < 0) r += cap;
+    return (int)r;
+}
+
+/* --------- HashMap (chaining) cu STIVA --------- */
+
+static HashMap *hm_create(int cap, int key) {
+    HashMap *h = (HashMap*)malloc(sizeof(HashMap));
+    if (!h) exit(1);
+    h->cap = cap;
+    h->key = key;
+    h->buckets = (Person**)calloc((size_t)cap, sizeof(Person*));
+    if (!h->buckets) exit(1);
+    return h;
+}
+
+static Person *person_new(const char *name, const char *cnp) {
+    Person *p = (Person*)malloc(sizeof(Person));
+    if (!p) exit(1);
+    strncpy(p->name, name, 20); p->name[20] = '\0';
+    strncpy(p->cnp, cnp, 13);   p->cnp[13] = '\0';
+    p->next = NULL;
+    return p;
+}
+
+/* push la INCEPUT (stiva) */
+static void hm_push(HashMap *h, const char *name, const char *cnp) {
+    int idx = hash_idx_cnp(cnp, h->key, h->cap);
+    Person *p = person_new(name, cnp);
+    p->next = h->buckets[idx];
+    h->buckets[idx] = p;
+}
+
+/* pop din bucket (stiva) - se garanteaza ca exista */
+static Person *hm_pop_bucket(HashMap *h, int idx) {
+    Person *top = h->buckets[idx];
+    h->buckets[idx] = top->next;
+    top->next = NULL;
+    return top;
+}
+
+/* inserare deja alocat (push) intr-un alt hashmap, cu re-hash dupa parametrii lui */
+static void hm_push_node(HashMap *h, Person *node) {
+    int idx = hash_idx_cnp(node->cnp, h->key, h->cap);
+    node->next = h->buckets[idx];
+    h->buckets[idx] = node;
+}
+
+static void hm_print(HashMap *h) {
+    for (int i = 0; i < h->cap; i++) {
+        printf("%d:", i);
+        Person *cur = h->buckets[i];
+        while (cur) {
+            printf(" %s", cur->name);
+            cur = cur->next;
+        }
+        printf("\n");
+    }
+}
+
+static void hm_free(HashMap *h) {
+    if (!h) return;
+    for (int i = 0; i < h->cap; i++) {
+        Person *cur = h->buckets[i];
+        while (cur) {
+            Person *nx = cur->next;
+            free(cur);
+            cur = nx;
+        }
+    }
+    free(h->buckets);
+    free(h);
+}
+
+/* --------- adancime maxima (max chain length) + bucket-ul ales --------- */
+
+static int bucket_len(Person *head) {
+    int k = 0;
+    while (head) { k++; head = head->next; }
+    return k;
+}
+
+/*
+ * Returneaza adancimea maxima si prin out_idx: primul bucket cu aceasta adancime
+ * (cel mai mic index) – exact ca in enunt.
+ */
+static int max_depth(HashMap *h, int *out_idx) {
+    int bestLen = 0;
+    int bestIdx = 0;
+    for (int i = 0; i < h->cap; i++) {
+        int len = bucket_len(h->buckets[i]);
+        if (len > bestLen) {
+            bestLen = len;
+            bestIdx = i;
+        }
+    }
+    if (out_idx) *out_idx = bestIdx;
+    return bestLen;
+}
+
+/* --------- main: comenzi 1..4 --------- */
+
+typedef struct {
+    char name[21];
+    char cnp[14];
+} InputPerson;
+
+int main(void) {
+    int cap, n;
+    if (scanf("%d", &cap) != 1) return 0;
+    scanf("%d", &n);
+
+    InputPerson *v = (InputPerson*)malloc((size_t)n * sizeof(InputPerson));
+    if (!v) exit(1);
+
+    for (int i = 0; i < n; i++) {
+        scanf("%20s", v[i].name);
+        scanf("%13s", v[i].cnp);
+        v[i].name[20] = '\0';
+        v[i].cnp[13] = '\0';
+    }
+
+    int key, cmd;
+    scanf("%d", &key);
+    scanf("%d", &cmd);
+
+    if (cmd == 1) {
+        for (int i = 0; i < n; i++) {
+            printf("%s %s\n", v[i].name, v[i].cnp);
+        }
+        free(v);
+        return 0;
+    }
+
+    // pentru cmd 2/3/4: construim hashmap-ul initial
+    HashMap *H = hm_create(cap, key);
+    for (int i = 0; i < n; i++) {
+        hm_push(H, v[i].name, v[i].cnp);   // push la inceput (stiva)
+    }
+
+    if (cmd == 2) {
+        hm_print(H);
+        hm_free(H);
+        free(v);
+        return 0;
+    }
+
+    if (cmd == 3) {
+        // nou hashmap, aceeasi capacitate si aceeasi cheie (din enunt)
+        HashMap *H2 = hm_create(cap, key);
+
+        int idx;
+        while (scanf("%d", &idx) == 1) {          // pana la EOF
+            Person *moved = hm_pop_bucket(H, idx); // LIFO din bucket-ul idx
+            // mutarea se face in bucket cu acelasi index (nu re-hash!)
+            moved->next = H2->buckets[idx];
+            H2->buckets[idx] = moved;
+        }
+
+        hm_print(H);
+        hm_print(H2);
+
+        hm_free(H2);
+        hm_free(H);
+        free(v);
+        return 0;
+    }
+
+    if (cmd == 4) {
+        int cap2;
+        scanf("%d", &cap2);
+
+        // hashmap nou, gol, cu capacitate cap2; cheia ramane aceeasi (tot key)
+        HashMap *H2 = hm_create(cap2, key);
+
+        while (1) {
+            int idxMax1 = 0;
+            int d1 = max_depth(H, &idxMax1);
+            int d2 = max_depth(H2, NULL);
+
+            if (d1 == d2) break;                 // gata: adancimi maxime egale
+            // se garanteaza ca pot ajunge egale
+            if (d1 > d2) {
+                // extragem din bucket-ul cu lista maxima (cel mai mic idx la egalitate)
+                Person *moved = hm_pop_bucket(H, idxMax1);
+                // re-hash in H2 (dupa capacitatea noua)
+                hm_push_node(H2, moved);
+            } else {
+                // in practica, conform enuntului mutam din primul in al doilea pana devin egale,
+                // deci d1 nu ar trebui sa fie < d2; dar punem safety.
+                break;
+            }
+        }
+
+        hm_print(H);
+        hm_print(H2);
+
+        hm_free(H2);
+        hm_free(H);
+        free(v);
+        return 0;
+    }
+
+    // safety
+    hm_free(H);
+    free(v);
+    return 0;
+}
