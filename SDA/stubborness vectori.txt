@@ -1,0 +1,84 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Directie {
+    char sens[20];
+};
+
+// Direcția opusă
+char *opusa(char *s) {
+    if (strcmp(s, "sus") == 0) return "jos";
+    if (strcmp(s, "jos") == 0) return "sus";
+    if (strcmp(s, "stanga") == 0) return "dreapta";
+    if (strcmp(s, "dreapta") == 0) return "stanga";
+    return "";
+}
+
+// Afișare direcții
+void afisare(struct Directie *d, int n) {
+    for (int i = 0; i < n; i++)
+        printf("%s\n", d[i].sens);
+}
+
+// Întoarcere acasă
+void intoarcere(struct Directie *d, int n) {
+    for (int i = n - 1; i >= 0; i--)
+        printf("%s\n", opusa(d[i].sens));
+}
+
+// Poziția curentă
+void pozitie(struct Directie *d, int n, int start_x, int start_y, int obstacol_x, int obstacol_y, int are_obstacol) {
+    int x = start_x, y = start_y;
+    for (int i = 0; i < n; i++) {
+        int nx = x, ny = y;
+        if (strcmp(d[i].sens, "sus") == 0) nx--;
+        else if (strcmp(d[i].sens, "jos") == 0) nx++;
+        else if (strcmp(d[i].sens, "stanga") == 0) ny--;
+        else if (strcmp(d[i].sens, "dreapta") == 0) ny++;
+
+        if (are_obstacol && nx == obstacol_x && ny == obstacol_y)
+            break;
+
+        x = nx; y = ny;
+    }
+    printf("%d %d\n", x, y);
+}
+
+int main() {
+    int m, n;
+    scanf("%d %d", &m, &n);
+    int x, y;
+    scanf("%d %d", &x, &y);
+
+    struct Directie *d = malloc(1000 * sizeof(struct Directie));
+    int nr = 0;
+    int obstacol_x = -1, obstacol_y = -1, are_obstacol = 0;
+
+    while (1) {
+        int comanda;
+        scanf("%d", &comanda);
+
+        switch (comanda) {
+            case 1:
+                scanf("%s", d[nr++].sens);
+                break;
+            case 2:
+                afisare(d, nr);
+                break;
+            case 3:
+                intoarcere(d, nr);
+                break;
+            case 4:
+                pozitie(d, nr, x, y, obstacol_x, obstacol_y, are_obstacol);
+                break;
+            case 5:
+                scanf("%d %d", &obstacol_x, &obstacol_y);
+                are_obstacol = 1;
+                break;
+            case 6:
+                free(d);
+                return 0;
+        }
+    }
+}

@@ -1,0 +1,138 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct Punct {
+    int x, y;
+    struct Punct *next;
+} Punct;
+
+// creează un nod nou
+Punct *creeaza_nod(int x, int y) {
+    Punct *nou = malloc(sizeof(Punct));
+    nou->x = x;
+    nou->y = y;
+    nou->next = NULL;
+    return nou;
+}
+
+// adaugă nod la final
+Punct *adauga_nod(Punct *head, int x, int y) {
+    Punct *nou = creeaza_nod(x, y);
+    if (!head) return nou;
+    Punct *temp = head;
+    while (temp->next) temp = temp->next;
+    temp->next = nou;
+    return head;
+}
+
+// afișează lista (coordonatele vizitate)
+void afisare(Punct *head) {
+    while (head) {
+        printf("%d %d\n", head->x, head->y);
+        head = head->next;
+    }
+}
+
+// verifică dacă poziția e validă
+int valid(int n, int mat[20][20], int x, int y) {
+    return x >= 0 && y >= 0 && x < n && y < n && mat[x][y] != 1;
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    int mat[20][20];
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            scanf("%d", &mat[i][j]);
+
+    int x, y;
+    scanf("%d %d", &x, &y);
+    int comanda;
+    scanf("%d", &comanda);
+
+    getchar(); // curăță newline
+
+    if (comanda == 1) {
+        char c;
+        while (scanf("%c", &c) != EOF)
+            if (c != '\n') printf("%c\n", c);
+
+    } else if (comanda == 2) {
+        char c;
+        while (scanf("%c", &c) != EOF) {
+            if (c == '\n') continue;
+            int nx = x, ny = y;
+            if (c == 'u') nx--;
+            if (c == 'd') nx++;
+            if (c == 'l') ny--;
+            if (c == 'r') ny++;
+            if (valid(n, mat, nx, ny)) { x = nx; y = ny; }
+        }
+        printf("%d %d\n", x, y);
+
+    } else if (comanda == 3) {
+        // determină ieșirea (singurul 0 de pe margine)
+        int ex = -1, ey = -1;
+        for (int i = 0; i < n; i++) {
+            if (mat[0][i] == 0) { ex = 0; ey = i; break; }
+            if (mat[n - 1][i] == 0) { ex = n - 1; ey = i; break; }
+            if (mat[i][0] == 0) { ex = i; ey = 0; break; }
+            if (mat[i][n - 1] == 0) { ex = i; ey = n - 1; break; }
+        }
+
+        Punct *drum = NULL;
+        int dx[] = {-1, 0, 1, 0};
+        int dy[] = {0, 1, 0, -1};
+        int dir = 0;
+        int cx = ex, cy = ey;
+
+        // simulează întoarcerea la punctul de start
+        while (!(cx == x && cy == y)) {
+            drum = adauga_nod(drum, cx, cy);
+            for (int k = 0; k < 4; k++) {
+                int nx = cx + dx[k], ny = cy + dy[k];
+                if (valid(n, mat, nx, ny) && !(nx == cx && ny == cy)) {
+                    cx = nx; cy = ny; break;
+                }
+            }
+        }
+        drum = adauga_nod(drum, x, y);
+        afisare(drum);
+
+        while (drum) { Punct *aux = drum; drum = drum->next; free(aux); }
+
+    } else if (comanda == 4) {
+        int dx[] = {-1, 0, 1, 0};
+        int dy[] = {0, 1, 0, -1};
+        char instr[] = {'u', 'r', 'd', 'l'};
+
+        Punct *drum = NULL;
+        int cx = x, cy = y;
+        drum = adauga_nod(drum, cx, cy);
+
+        // rulează până la ieșire
+        while (1) {
+            int gasit = 0;
+            for (int k = 0; k < 4; k++) {
+                int step = (mat[cx][cy] == 2) ? 2 : 1;
+                int nx = cx + dx[k] * step;
+                int ny = cy + dy[k] * step;
+                if (valid(n, mat, nx, ny)) {
+                    cx = nx; cy = ny;
+                    drum = adauga_nod(drum, cx, cy);
+                    gasit = 1;
+                    break;
+                }
+            }
+            if (cx == 0 || cy == 0 || cx == n - 1 || cy == n - 1) break;
+            if (!gasit) break;
+        }
+
+        afisare(drum);
+
+        while (drum) { Punct *aux = drum; drum = drum->next; free(aux); }
+    }
+
+    return 0;
+}

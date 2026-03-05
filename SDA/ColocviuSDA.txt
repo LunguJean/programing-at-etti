@@ -1,0 +1,268 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+typedef struct Car {
+    char plate[8];   // maxim 7 caractere + '\0'
+    char cnp[14];    // maxim 13 caractere + '\0'
+    float sum;
+    float rating;
+    int yy;          // cifrele 2-3 din CNP
+    struct Car *next;
+} Car;
+
+typedef struct {
+    Car **buckets;
+    int size;
+} HashMap;
+
+/* ---------- utilitare ---------- */
+
+static int yy_from_cnp(const char *cnp) {
+    return (cnp[1] - '0') * 10 + (cnp[2] - '0');
+}
+
+static void county_code(const char *plate, char *out) {
+    // cod judet = secventa initiala de litere (1 sau 2 in formatul cerut)
+    int i = 0;
+    while (plate[i] && plate[i] >= 'A' && plate[i] <= 'Z' && i < 2) {
+        out[i] = plate[i];
+        i++;
+    }
+    out[i] = '\0';
+}
+
+static int hash_plate(const char *plate, int B) {
+    char jud[3];
+    county_code(plate, jud);
+    int sum = 0;
+    for (int i = 0; jud[i]; i++) sum += (unsigned char)jud[i];
+    int r = sum % B;
+    if (r < 0) r += B;
+    return r;
+}
+
+/* ---------- HashMap + chaining ---------- */
+
+static HashMap *create_map(int B) {
+    HashMap *m = (HashMap*)malloc(sizeof(HashMap));
+    if (!m) exit(1);
+    m->size = B;
+    m->buckets = (Car**)calloc((size_t)B, sizeof(Car*));
+    if (!m->buckets) exit(1);
+    return m;
+}
+
+static Car *car_new(const char *plate, const char *cnp, float sum, float rating) {
+    Car *c = (Car*)malloc(sizeof(Car));
+    if (!c) exit(1);
+    strncpy(c->plate, plate, 7); c->plate[7] = '\0';
+    strncpy(c->cnp, cnp, 13);    c->cnp[13] = '\0';
+    c->sum = sum;
+    c->rating = rating;
+    c->yy = yy_from_cnp(cnp);
+    c->next = NULL;
+    return c;
+}
+
+/*
+ * Inserare in bucket ordonat crescator dupa yy (cifrele 2-3 din CNP).
+ * La egalitate (nu e specificat clar), pastram ordinea citirii -> inseram dupa ultimele egale.
+ */
+static void insert_sorted(HashMap *m, const char *plate, const char *cnp, float sum, float rating) {
+    int idx = hash_plate(plate, m->size);
+    Car *nou = car_new(plate, cnp, sum, rating);
+
+    Car **head = &m->buckets[idx];
+
+    if (*head == NULL || (*head)->yy > nou->yy) {
+        nou->next = *head;
+        *head = nou;
+        return;
+    }
+
+    Car *cur = *head;
+    while (cur->next && cur->next->yy <= nou->yy) cur = cur->next;
+
+    nou->next = cur->next;
+    cur->next = nou;
+}
+
+static void free_map(HashMap *m) {
+    if (!m) return;
+    for (int i = 0; i < m->size; i++) {
+        Car *cur = m->buckets[i];
+        while (cur) {
+            Car *nx = cur->next;
+            free(cur);
+            cur = nx;
+        }
+    }
+    free(m->buckets);
+    free(m);
+}
+
+/* ---------- Comenzi ---------- */
+
+static void cmd1(HashMap *m) {
+    for (int i = 0; i < m->size; i++) {
+        Car *cur = m->buckets[i];
+        while (cur) {
+            printf("%s\n", cur->plate);
+            cur = cur->next;
+        }
+    }
+}
+
+static void cmd2(HashMap *m, const char *jud) {
+    int idx;
+    // pentru "pasii pana la prima masina din judet" se parcurge bucket-ul
+    // in care ar cadea judetul (conform exemplului din enunt)
+    int sum = 0;
+    for (int i = 0; jud[i]; i++) sum += (unsigned char)jud[i];
+    idx = sum % m->size;
+    if (idx < 0) idx += m->size;
+
+    int steps = 0;
+    int first_steps = 0;
+
+    Car *cur = m->buckets[idx];
+    while (cur) {
+        steps++;
+        char cc[3];
+        county_code(cur->plate, cc);
+
+        if (strcmp(cc, jud) == 0) {
+            printf("%s %s %.2f %.2f\n", cur->plate, cur->cnp, cur->sum, cur->rating);
+            if (first_steps == 0) first_steps = steps;
+        }
+        cur = cur->next;
+    }
+
+    printf("%d\n", first_steps);
+}
+
+static void stats_one(HashMap *m, const char *jud) {
+    int idx;
+    int sumc = 0;
+    for (int i = 0; jud[i]; i++) sumc += (unsigned char)jud[i];
+    idx = sumc % m->size;
+    if (idx < 0) idx += m->size;
+
+    int cnt = 0;
+    double total = 0.0;
+    double rsum = 0.0;
+
+    Car *cur = m->buckets[idx];
+    while (cur) {
+        char cc[3];
+        county_code(cur->plate, cc);
+        if (strcmp(cc, jud) == 0) {
+            cnt++;
+            total += cur->sum;
+            rsum += cur->rating;
+        }
+        cur = cur->next;
+    }
+
+    double avgSum = cnt ? total / cnt : 0.0;
+    double avgRating = cnt ? rsum / cnt : 0.0;
+
+    printf("%s %d %.2f %.2f %.2f\n", jud, cnt, (float)total, (float)avgSum, (float)avgRating);
+}
+
+static void cmd3(HashMap *m, const char *j1, const char *j2) {
+    stats_one(m, j1);
+    stats_one(m, j2);
+}
+
+static void cmd4(HashMap *m, const char *jud, float limit) {
+    int sumc = 0;
+    for (int i = 0; jud[i]; i++) sumc += (unsigned char)jud[i];
+    int idx = sumc % m->size;
+    if (idx < 0) idx += m->size;
+
+    // colectam masinile eligibile din bucket-ul judetului
+    Car **arr = (Car**)malloc(1024 * sizeof(Car*)); // suficient pentru colocviu; poti mari daca vrei
+    int cap = 1024, k = 0;
+
+    Car *cur = m->buckets[idx];
+    while (cur) {
+        char cc[3];
+        county_code(cur->plate, cc);
+        if (strcmp(cc, jud) == 0 && cur->rating < limit) {
+            if (k == cap) {
+                cap *= 2;
+                arr = (Car**)realloc(arr, (size_t)cap * sizeof(Car*));
+                if (!arr) exit(1);
+            }
+            arr[k++] = cur;
+        }
+        cur = cur->next;
+    }
+
+    // sortare crescatoare dupa rating
+    for (int i = 0; i < k - 1; i++) {
+        for (int j = i + 1; j < k; j++) {
+            if (arr[i]->rating > arr[j]->rating) {
+                Car *tmp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = tmp;
+            }
+        }
+    }
+
+    for (int i = 0; i < k; i++) {
+        printf("%s %.2f\n", arr[i]->plate, arr[i]->rating);
+    }
+
+    free(arr);
+}
+
+/* ---------- main ---------- */
+
+int main(void) {
+    int N, B;
+    if (scanf("%d", &N) != 1) return 0;
+    if (scanf("%d", &B) != 1) return 0;
+
+    HashMap *m = create_map(B);
+
+    for (int i = 0; i < N; i++) {
+        char plate[8], cnp[14];
+        float sum, rating;
+
+        scanf("%7s", plate);
+        scanf("%13s", cnp);
+        scanf("%f", &sum);
+        scanf("%f", &rating);
+
+        insert_sorted(m, plate, cnp, sum, rating);
+    }
+
+    int cmd;
+    scanf("%d", &cmd);
+
+    if (cmd == 1) {
+        cmd1(m);
+    } else if (cmd == 2) {
+        char jud[3];
+        scanf("%2s", jud);
+        cmd2(m, jud);
+    } else if (cmd == 3) {
+        char j1[3], j2[3];
+        scanf("%2s %2s", j1, j2);
+        cmd3(m, j1, j2);
+    } else if (cmd == 4) {
+        char jud[3];
+        float limit;
+        // in exemplu, judetul si rating-ul pot fi pe linii diferite; scanf le ia oricum
+        scanf("%2s", jud);
+        scanf("%f", &limit);
+        cmd4(m, jud, limit);
+    }
+
+    free_map(m);
+    return 0;
+}

@@ -1,0 +1,195 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Eveniment {
+    char nume[30];
+    int luna;
+    int zi;
+    int ora_start;
+    int durata;
+    struct Eveniment *next;
+} Eveniment;
+
+// Creează un eveniment nou
+Eveniment *create_event() {
+    Eveniment *nou = malloc(sizeof(Eveniment));
+    scanf("%s", nou->nume);
+    scanf("%d %d %d %d", &nou->luna, &nou->zi, &nou->ora_start, &nou->durata);
+    nou->next = NULL;
+    return nou;
+}
+
+// Adaugă un eveniment în listă (la final)
+Eveniment *add_event(Eveniment *head) {
+    if (head == NULL)
+        return create_event();
+    Eveniment *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = create_event();
+    return head;
+}
+
+// Afișare listă (comanda 1)
+void afisare(Eveniment *head) {
+    Eveniment *temp = head;
+    while (temp) {
+        printf("%s %d %d %d %d\n", temp->nume, temp->luna, temp->zi, temp->ora_start, temp->ora_start + temp->durata);
+        temp = temp->next;
+    }
+}
+
+// Verifică dacă două evenimente se intersectează
+int se_intersecteaza(Eveniment *a, Eveniment *b) {
+    if (a->luna != b->luna || a->zi != b->zi)
+        return 0;
+    int sfarsit_a = a->ora_start + a->durata;
+    int sfarsit_b = b->ora_start + b->durata;
+    return !(sfarsit_a <= b->ora_start || sfarsit_b <= a->ora_start);
+}
+
+// Adăugare fără suprapuneri (comanda 2)
+Eveniment *adaugare_fara_conflict(Eveniment *head) {
+    char nume[30];
+    while (scanf("%s", nume) && strcmp(nume, "STOP") != 0) {
+        Eveniment *nou = malloc(sizeof(Eveniment));
+        strcpy(nou->nume, nume);
+        scanf("%d %d %d %d", &nou->luna, &nou->zi, &nou->ora_start, &nou->durata);
+        nou->next = NULL;
+
+        int conflict = 0;
+        for (Eveniment *temp = head; temp; temp = temp->next) {
+            if (se_intersecteaza(temp, nou)) {
+                conflict = 1;
+                break;
+            }
+        }
+
+        if (!conflict) {
+            if (head == NULL)
+                head = nou;
+            else {
+                Eveniment *t = head;
+                while (t->next)
+                    t = t->next;
+                t->next = nou;
+            }
+        } else
+            free(nou);
+    }
+    return head;
+}
+
+// Comanda 3 — intervale libere pentru o zi
+void afisare_libera(Eveniment *head) {
+    int luna, zi;
+    scanf("%d %d", &luna, &zi);
+
+    int ocupat[24] = {0};
+    for (Eveniment *temp = head; temp; temp = temp->next)
+        if (temp->luna == luna && temp->zi == zi)
+            for (int h = temp->ora_start; h < temp->ora_start + temp->durata; h++)
+                ocupat[h] = 1;
+
+    for (int h = 9; h < 17; h++)
+        if (!ocupat[h])
+            printf("Free %d %d %d %d\n", luna, zi, h, h + 1);
+}
+
+// Comanda 4 — intersecția a două calendare (intervale libere comune)
+void intersectie_calendare() {
+    Eveniment *cal1 = NULL, *cal2 = NULL;
+
+    // Primul calendar
+    char nume[30];
+    while (scanf("%s", nume) && strcmp(nume, "STOP") != 0) {
+        Eveniment *nou = malloc(sizeof(Eveniment));
+        strcpy(nou->nume, nume);
+        scanf("%d %d %d %d", &nou->luna, &nou->zi, &nou->ora_start, &nou->durata);
+        nou->next = NULL;
+        if (cal1 == NULL)
+            cal1 = nou;
+        else {
+            Eveniment *t = cal1;
+            while (t->next)
+                t = t->next;
+            t->next = nou;
+        }
+    }
+
+    // Al doilea calendar
+    while (scanf("%s", nume) && strcmp(nume, "STOP") != 0) {
+        Eveniment *nou = malloc(sizeof(Eveniment));
+        strcpy(nou->nume, nume);
+        scanf("%d %d %d %d", &nou->luna, &nou->zi, &nou->ora_start, &nou->durata);
+        nou->next = NULL;
+        if (cal2 == NULL)
+            cal2 = nou;
+        else {
+            Eveniment *t = cal2;
+            while (t->next)
+                t = t->next;
+            t->next = nou;
+        }
+    }
+
+    int nr_afisate = 0;
+    for (int luna = 1; luna <= 12 && nr_afisate < 5; luna++) {
+        for (int zi = 1; zi <= 31 && nr_afisate < 5; zi++) {
+            int lib1[24] = {0}, lib2[24] = {0};
+
+            for (int h = 9; h < 17; h++)
+                lib1[h] = lib2[h] = 1;
+
+            for (Eveniment *t = cal1; t; t = t->next)
+                if (t->luna == luna && t->zi == zi)
+                    for (int h = t->ora_start; h < t->ora_start + t->durata; h++)
+                        lib1[h] = 0;
+
+            for (Eveniment *t = cal2; t; t = t->next)
+                if (t->luna == luna && t->zi == zi)
+                    for (int h = t->ora_start; h < t->ora_start + t->durata; h++)
+                        lib2[h] = 0;
+
+            for (int h = 9; h < 17 && nr_afisate < 5; h++)
+                if (lib1[h] && lib2[h]) {
+                    printf("Sedinta %d %d %d %d\n", luna, zi, h, h + 1);
+                    nr_afisate++;
+                }
+        }
+    }
+}
+
+int main() {
+    Eveniment *head = NULL;
+    char nume[30];
+
+    // Citim evenimentele până la STOP
+    while (scanf("%s", nume) && strcmp(nume, "STOP") != 0) {
+        Eveniment *nou = malloc(sizeof(Eveniment));
+        strcpy(nou->nume, nume);
+        scanf("%d %d %d %d", &nou->luna, &nou->zi, &nou->ora_start, &nou->durata);
+        nou->next = NULL;
+        if (head == NULL)
+            head = nou;
+        else {
+            Eveniment *temp = head;
+            while (temp->next)
+                temp = temp->next;
+            temp->next = nou;
+        }
+    }
+
+    int comanda;
+    scanf("%d", &comanda);
+
+    switch (comanda) {
+        case 1: afisare(head); break;
+        case 2: head = adaugare_fara_conflict(head); afisare(head); break;
+        case 3: afisare_libera(head); break;
+        case 4: intersectie_calendare(); break;
+    }
+
+    return 0;
+}

@@ -1,0 +1,77 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Examen {
+    char nume[21];
+};
+
+// Afișare
+void afisare(struct Examen *e, int n) {
+    for (int i = 0; i < n; i++)
+        printf("%s\n", e[i].nume);
+}
+
+// Inversare pe grupuri de k
+void inversare(struct Examen *e, int n, int k) {
+    for (int i = 0; i < n; i += k) {
+        int st = i, dr = (i + k - 1 < n) ? i + k - 1 : n - 1;
+        while (st < dr) {
+            struct Examen aux = e[st];
+            e[st] = e[dr];
+            e[dr] = aux;
+            st++;
+            dr--;
+        }
+    }
+}
+
+// Elimină examenele de pe poziții divizibile cu 7
+int elimina_div7(struct Examen *e, int n) {
+    struct Examen temp[1000];
+    int j = 0;
+    for (int i = 0; i < n; i++) {
+        if ((i + 1) % 7 != 0)
+            temp[j++] = e[i];
+    }
+    for (int i = 0; i < j; i++)
+        e[i] = temp[i];
+    return j;
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    struct Examen *e = malloc(n * sizeof(struct Examen));
+
+    for (int i = 0; i < n; i++)
+        scanf("%s", e[i].nume);
+
+    int c;
+    scanf("%d", &c);
+
+    switch (c) {
+        case 1:
+            afisare(e, n);
+            break;
+        case 2:
+            inversare(e, n, 3);
+            afisare(e, n);
+            break;
+        case 3: {
+            int k;
+            scanf("%d", &k);
+            inversare(e, n, k);
+            afisare(e, n);
+            break;
+        }
+        case 4:
+            inversare(e, n, 3);
+            n = elimina_div7(e, n);
+            afisare(e, n);
+            break;
+    }
+
+    free(e);
+    return 0;
+}

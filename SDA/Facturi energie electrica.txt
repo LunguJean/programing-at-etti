@@ -1,0 +1,101 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+void next_month(int *y, int *m)
+{
+    (*m)++;
+    if (*m == 13)
+    {
+        *m = 1;
+        (*y)++;
+    }
+}
+
+int main()
+{
+    int y0, m0, cmd;
+    scanf("%d", &y0);
+    scanf("%d", &m0);
+    scanf("%d", &cmd);
+
+    int cap = 16;
+    int n = 0;
+    int *v = malloc(cap * sizeof(int));
+
+    int x;
+    while (scanf("%d", &x) == 1)   // citire pana la EOF
+    {
+        if (n == cap)
+        {
+            cap *= 2;
+            v = realloc(v, cap * sizeof(int));
+        }
+        v[n++] = x;
+    }
+
+    // COMANDA 1
+    if (cmd == 1)
+    {
+        for (int i = 0; i < n; i++)
+            printf("%d\n", v[i]);
+    }
+
+    // COMANDA 2
+    else if (cmd == 2)
+    {
+        int y = y0, m = m0;
+        for (int i = 0; i < n; i++)
+        {
+            printf("%d %d %d\n", y, m, v[i]);
+            next_month(&y, &m);
+        }
+    }
+
+    // COMANDA 3
+    else if (cmd == 3)
+    {
+        int y = y0, m = m0;
+        for (int i = 0; i < n; i++)
+        {
+            if (y == y0)
+                printf("%d %d %d\n", y, m, v[i]);
+            next_month(&y, &m);
+        }
+    }
+
+    // COMANDA 4
+    else if (cmd == 4)
+    {
+        int y = y0, m = m0;
+        int bestYear = y0;
+        int bestValue = -1;
+
+        for (int i = 0; i < n; i++)
+        {
+            if (m == m0)
+            {
+                if (v[i] > bestValue)
+                {
+                    bestValue = v[i];
+                    bestYear = y;
+                }
+            }
+            next_month(&y, &m);
+        }
+        printf("%d\n", bestYear);
+    }
+
+    // COMANDA 5 (BONUS)
+    else if (cmd == 5)
+    {
+        long long sum = 0;
+        for (int i = n - 12; i < n; i++)
+            sum += v[i];
+
+        double avg = (double)sum / 12.0;
+        printf("%.2f\n", avg);
+    }
+
+    free(v);
+    return 0;
+}

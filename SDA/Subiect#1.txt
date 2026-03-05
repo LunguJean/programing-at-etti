@@ -1,0 +1,104 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct LISTA {
+    int date;
+    struct LISTA *urmator;
+    struct LISTA *anterior;
+};
+
+struct LISTA *lista = NULL;
+
+struct LISTA* inserareNod(void);
+void afisareLista(struct LISTA *head);
+struct LISTA* swapPrimUltim(struct LISTA *head);
+
+int main(void)
+{
+    int i, n;
+    scanf("%d", &n);
+
+    for (i = 0; i < n; i++) {
+        lista = inserareNod();
+    }
+
+    afisareLista(lista);
+
+    lista = swapPrimUltim(lista);
+
+    afisareLista(lista);
+
+    return 0;
+}
+
+struct LISTA* inserareNod(void)
+{
+    struct LISTA *nodNou, *nodCurent;
+
+    nodNou = (struct LISTA*)malloc(sizeof(struct LISTA));
+    if (!nodNou) exit(1);
+
+    scanf("%d", &nodNou->date);
+    nodNou->anterior = NULL;
+    nodNou->urmator  = NULL;
+
+    if (lista == NULL) {
+        return nodNou;
+    }
+
+    nodCurent = lista;
+    while (nodCurent->urmator != NULL)
+        nodCurent = nodCurent->urmator;
+
+    nodCurent->urmator = nodNou;
+    nodNou->anterior   = nodCurent;
+
+    return lista;
+}
+
+void afisareLista(struct LISTA *head)
+{
+    struct LISTA *p = head;
+    while (p != NULL) {
+        printf("%d\n", p->date);
+        p = p->urmator;
+    }
+}
+
+struct LISTA* swapPrimUltim(struct LISTA *head)
+{
+    // 0 sau 1 nod -> nu ai ce schimba
+    if (head == NULL || head->urmator == NULL) return head;
+
+    struct LISTA *prim = head;
+    struct LISTA *ultim = head;
+
+    while (ultim->urmator != NULL)
+        ultim = ultim->urmator;
+
+    // Dacă sunt exact 2 noduri: A <-> B devine B <-> A
+    if (prim->urmator == ultim) {
+        ultim->anterior = NULL;
+        ultim->urmator = prim;
+
+        prim->anterior = ultim;
+        prim->urmator = NULL;
+
+        return ultim;
+    }
+
+    struct LISTA *alDoilea = prim->urmator;
+    struct LISTA *penultim = ultim->anterior;
+
+    // 1) ultim devine primul
+    ultim->anterior = NULL;
+    ultim->urmator = alDoilea;
+    alDoilea->anterior = ultim;
+
+    // 2) prim devine ultimul
+    prim->urmator = NULL;
+    prim->anterior = penultim;
+    penultim->urmator = prim;
+
+    return ultim; // noul head
+}

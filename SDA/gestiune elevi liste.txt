@@ -1,0 +1,184 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct student
+{
+    char nume[20];
+    char cod[20];
+    int note[9];
+    float medie;
+    
+    struct student *next;
+} student;
+
+student *create()
+{
+    student *new_student = malloc(sizeof(student));
+    scanf("%s", new_student->nume);
+    scanf("%s", new_student->cod);
+    for(int i = 0; i < 9; i++)
+    {
+        scanf("%d", &new_student->note[i]);
+    }
+    float suma = 0;
+    for(int i = 0; i < 9; i++)
+    {
+        suma += new_student->note[i];
+    }
+    new_student->medie = suma/9;
+    
+    return new_student;
+}
+
+student *list(student *head)
+{
+    if(head == NULL)
+    {
+        head = create();
+        return head;
+    }
+    
+    student *temp = head;
+    
+    while(temp->next)
+    {
+        temp = temp->next;
+    }
+    temp->next = create();
+    
+    return head;
+}
+
+void afisare(student *head)
+{
+    while(head)
+    {
+        printf("%s\n", head->nume);
+        printf("%s\n", head->cod);
+        for(int i = 0; i < 9; i++)
+        {
+            printf("%d ", head->note[i]);
+        }
+        printf("\n");
+        
+        head = head->next;
+    }
+}
+
+void best(student *head)
+{
+    float max = head->medie;
+    student *temp = head;
+    while(temp)
+    {
+        if(max < temp->medie)
+        {
+            max = temp->medie;
+        }
+        temp = temp->next;
+    }
+    
+    temp = head;
+    
+    while(temp)
+    {
+        if(max == temp->medie)
+        {
+            printf("%s\n", temp->nume);
+        }
+        temp = temp->next;
+    }
+}
+
+void less_than(student *head)
+{
+    student *temp = head;
+    while(temp)
+    {
+        if(temp->medie <= 6)
+        {
+            printf("%s\n", temp->nume);
+        }
+        temp = temp->next;
+    }
+}
+
+
+
+void mean(student *head, char *input)
+{
+    student *temp = head;
+    while(temp)
+    {
+        int compare = strcmp(temp->cod, input);
+        if(compare == 0)
+        {
+            int schimbat, aux;
+            do
+            {
+                schimbat = 0;
+                for(int i = 0; i < 8; i++)
+                {
+                    if(temp->note[i] > temp->note[i+1])
+                    {
+                        aux = temp->note[i];
+                        temp->note[i] = temp->note[i+1];
+                        temp->note[i+1] = aux;
+                        schimbat = 1;
+                    }
+                }
+            } while(schimbat);
+            printf("%d\n", temp->note[4]);
+            return;
+        }
+      
+        temp = temp->next;
+    }
+}
+
+
+int main()
+{
+    int n;
+    scanf("%d", &n);
+    student *head = NULL;
+    while(n)
+    {
+        head = list(head);
+        n--;
+    }
+    
+    int test;
+    scanf("%d", &test);
+    
+    switch(test)
+    {
+        case 1:
+        {
+            afisare(head);
+            break;
+        }
+        
+        case 2:
+        {
+            best(head);
+            break;
+        }
+        
+        case 3:
+        {
+            less_than(head);
+            break;
+        }
+        
+        case 4:
+        {
+            char input[20];
+            scanf("%s", input);
+            mean(head, input);
+            break;
+        }
+    }
+    return 0;
+}

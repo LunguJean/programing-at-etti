@@ -1,0 +1,171 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Echipa {
+    char nume[31];
+    int membri;
+    int exp[5];
+    float punctaj;
+    float eficienta;
+    struct Echipa *next;
+} Echipa;
+
+// Creează o echipă nouă
+Echipa *create() {
+    Echipa *nou = malloc(sizeof(Echipa));
+    scanf("%s", nou->nume);
+    scanf("%d", &nou->membri);
+    for (int i = 0; i < nou->membri; i++)
+        scanf("%d", &nou->exp[i]);
+    nou->punctaj = 0;
+    nou->eficienta = 0;
+    nou->next = NULL;
+    return nou;
+}
+
+// Adaugă echipa în listă
+Echipa *add_team(Echipa *head) {
+    if (head == NULL)
+        return create();
+    Echipa *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = create();
+    return head;
+}
+
+// Afișare echipe (comanda 1)
+void afisare(Echipa *head) {
+    while (head) {
+        printf("%s\n", head->nume);
+        printf("%d\n", head->membri);
+        for (int i = 0; i < head->membri; i++)
+            printf("%d ", head->exp[i]);
+        printf("\n");
+        head = head->next;
+    }
+}
+
+// Calculează punctajul și eficiența (comanda 2)
+void calculeaza(Echipa *head) {
+    while (head) {
+        int x, y, z, indicii;
+        scanf("%d %d %d", &x, &y, &z);
+        scanf("%d", &indicii);
+        float P = (x + y + z) / 3.0 - 0.25 * indicii;
+        int suma_exp = 0;
+        for (int i = 0; i < head->membri; i++)
+            suma_exp += head->exp[i];
+        float E = P / suma_exp;
+        head->punctaj = P;
+        head->eficienta = E;
+        printf("%s %d\n%.2f\n%.2f\n", head->nume, head->membri, P, E);
+        head = head->next;
+    }
+}
+
+// Premii I, II, III (comanda 3)
+void premii(Echipa *head) {
+    Echipa *temp = head;
+    while (temp) {
+        int x, y, z, indicii;
+        scanf("%d %d %d", &x, &y, &z);
+        scanf("%d", &indicii);
+        temp->punctaj = (x + y + z) / 3.0 - 0.25 * indicii;
+        temp = temp->next;
+    }
+
+    // sortare după punctaj descrescător
+    int n = 0;
+    temp = head;
+    Echipa *v[100];
+    while (temp) {
+        v[n++] = temp;
+        temp = temp->next;
+    }
+    for (int i = 0; i < n - 1; i++)
+        for (int j = i + 1; j < n; j++)
+            if (v[i]->punctaj < v[j]->punctaj) {
+                Echipa *aux = v[i];
+                v[i] = v[j];
+                v[j] = aux;
+            }
+
+    printf("%s %.2f\n", v[0]->nume, v[0]->punctaj);
+    printf("%s %.2f\n", v[1]->nume, v[1]->punctaj);
+    printf("%s %.2f\n", v[2]->nume, v[2]->punctaj);
+}
+
+// Premiul special (comanda 4)
+void premiu_special(Echipa *head) {
+    Echipa *temp = head;
+    int n = 0;
+    Echipa *v[100];
+
+    // citim notele și calculăm scorurile
+    while (temp) {
+        int x, y, z, indicii;
+        scanf("%d %d %d", &x, &y, &z);
+        scanf("%d", &indicii);
+        float P = (x + y + z) / 3.0 - 0.25 * indicii;
+        int suma_exp = 0;
+        for (int i = 0; i < temp->membri; i++)
+            suma_exp += temp->exp[i];
+        float E = P / suma_exp;
+        temp->punctaj = P;
+        temp->eficienta = E;
+        v[n++] = temp;
+        temp = temp->next;
+    }
+
+    // sortăm descrescător după punctaj
+    for (int i = 0; i < n - 1; i++)
+        for (int j = i + 1; j < n; j++)
+            if (v[i]->punctaj < v[j]->punctaj) {
+                Echipa *aux = v[i];
+                v[i] = v[j];
+                v[j] = aux;
+            }
+
+    Echipa *top3[3] = {v[0], v[1], v[2]};
+
+    // găsim cea mai eficientă echipă
+    Echipa *bestE = v[0];
+    for (int i = 1; i < n; i++)
+        if (v[i]->eficienta > bestE->eficienta)
+            bestE = v[i];
+
+    // verificăm dacă este printre primele 3
+    if (bestE == top3[0] || bestE == top3[1] || bestE == top3[2])
+        printf("NU\n");
+    else
+        printf("%s %.2f\n", bestE->nume, bestE->eficienta);
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    Echipa *head = NULL;
+    for (int i = 0; i < n; i++)
+        head = add_team(head);
+
+    int c;
+    scanf("%d", &c);
+
+    switch (c) {
+        case 1: afisare(head); break;
+        case 2: calculeaza(head); break;
+        case 3: premii(head); break;
+        case 4: premiu_special(head); break;
+    }
+
+    // eliberare memorie
+    while (head) {
+        Echipa *aux = head;
+        head = head->next;
+        free(aux);
+    }
+
+    return 0;
+}

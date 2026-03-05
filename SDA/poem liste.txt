@@ -1,0 +1,159 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Strofă {
+    char versuri[4][101];
+    struct Strofă *next;
+} Strofă;
+
+// Creează o strofă nouă
+Strofă *create() {
+    Strofă *nou = malloc(sizeof(Strofă));
+    for (int i = 0; i < 4; i++)
+        fgets(nou->versuri[i], 101, stdin);
+    nou->versuri[0][strcspn(nou->versuri[0], "\n")] = '\0';
+    nou->versuri[1][strcspn(nou->versuri[1], "\n")] = '\0';
+    nou->versuri[2][strcspn(nou->versuri[2], "\n")] = '\0';
+    nou->versuri[3][strcspn(nou->versuri[3], "\n")] = '\0';
+    nou->next = NULL;
+    return nou;
+}
+
+// Adaugă strofă în listă
+Strofă *list(Strofă *head) {
+    if (head == NULL)
+        return create();
+    Strofă *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = create();
+    return head;
+}
+
+// Afișare poezie (comanda 1)
+void afisare(Strofă *head) {
+    Strofă *temp = head;
+    while (temp) {
+        for (int i = 0; i < 4; i++)
+            printf("%s\n", temp->versuri[i]);
+        printf("\n");
+        temp = temp->next;
+    }
+}
+
+// Obține ultimele 2 litere dintr-un vers
+void ultime_doua(char *vers, char *rez) {
+    int n = strlen(vers);
+    rez[0] = vers[n - 2];
+    rez[1] = vers[n - 1];
+    rez[2] = '\0';
+}
+
+// Verifică rimă îmbrățișată în prima strofă (comanda 2)
+void rima(Strofă *head) {
+    if (!head) return;
+
+    char a1[3], a2[3], a3[3], a4[3];
+    ultime_doua(head->versuri[0], a1);
+    ultime_doua(head->versuri[1], a2);
+    ultime_doua(head->versuri[2], a3);
+    ultime_doua(head->versuri[3], a4);
+
+    if (strcmp(a1, a4) == 0 && strcmp(a2, a3) == 0)
+        printf("%s-%s-%s-%s\n", a1, a2, a3, a4);
+    else
+        printf("nu\n");
+}
+
+// Inversare de strofe (comanda 3)
+Strofă *inverseaza(Strofă *head) {
+    Strofă *prev = NULL, *cur = head, *next;
+    while (cur) {
+        next = cur->next;
+        cur->next = prev;
+        prev = cur;
+        cur = next;
+    }
+    return prev;
+}
+
+// Cea mai frecventă rimă (comanda 4)
+void cea_mai_frecventa(Strofă *head) {
+    char rime[100][3];
+    int frec[100] = {0};
+    int nr = 0;
+
+    while (head) {
+        char a1[3], a2[3], a3[3], a4[3];
+        ultime_doua(head->versuri[0], a1);
+        ultime_doua(head->versuri[1], a2);
+        ultime_doua(head->versuri[2], a3);
+        ultime_doua(head->versuri[3], a4);
+
+        if (strcmp(a1, a4) == 0 && strcmp(a2, a3) == 0) {
+            // contorizăm rima (a1)
+            int gasit = 0;
+            for (int i = 0; i < nr; i++)
+                if (strcmp(rime[i], a1) == 0) {
+                    frec[i]++;
+                    gasit = 1;
+                    break;
+                }
+            if (!gasit) {
+                strcpy(rime[nr], a1);
+                frec[nr++] = 1;
+            }
+        }
+        head = head->next;
+    }
+
+    // determinăm maximul
+    int max = 0, poz = 0;
+    for (int i = 0; i < nr; i++)
+        if (frec[i] > max) {
+            max = frec[i];
+            poz = i;
+        }
+
+    printf("%s\n", rime[poz]);
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    getchar(); // eliminăm newline-ul de după număr
+
+    Strofă *head = NULL;
+    for (int i = 0; i < n; i++)
+        head = list(head);
+
+    int comanda;
+    scanf("%d", &comanda);
+
+    switch (comanda) {
+        case 1:
+            afisare(head);
+            break;
+        case 2:
+            rima(head);
+            break;
+        case 3: {
+            head = inverseaza(head);
+            afisare(head);
+            break;
+        }
+        case 4:
+            cea_mai_frecventa(head);
+            break;
+    }
+
+    // eliberare memorie
+    while (head) {
+        Strofă *aux = head;
+        head = head->next;
+        free(aux);
+    }
+
+    return 0;
+}

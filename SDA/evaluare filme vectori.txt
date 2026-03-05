@@ -1,0 +1,98 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+struct Utilizator {
+    char nume[21];
+    float scoruri[5];
+};
+
+float medie(struct Utilizator u) {
+    float s = 0;
+    for (int i = 0; i < 5; i++)
+        s += u.scoruri[i];
+    return s / 5.0;
+}
+
+int main() {
+    struct Utilizator v[100];
+    int n = 0;
+    int comanda;
+
+    while (scanf("%d", &comanda) != EOF) {
+        if (comanda == 1) {
+            scanf("%s", v[n].nume);
+            for (int i = 0; i < 5; i++)
+                scanf("%f", &v[n].scoruri[i]);
+            n++;
+        } else if (comanda == 2) {
+            for (int i = 0; i < n; i++) {
+                printf("%s ", v[i].nume);
+                for (int j = 0; j < 5; j++)
+                    printf("%.0f ", v[i].scoruri[j]);
+                printf("\n");
+            }
+            break;
+        } else if (comanda == 3) {
+            int idx = 0;
+            float minm = medie(v[0]);
+            for (int i = 1; i < n; i++) {
+                float m = medie(v[i]);
+                if (m < minm)
+                    minm = m, idx = i;
+            }
+            printf("%s ", v[idx].nume);
+            for (int j = 0; j < 5; j++)
+                printf("%.0f ", v[idx].scoruri[j]);
+            printf("\n");
+            break;
+        } else if (comanda == 4) {
+            double min_dist = 1e9;
+            int p1 = 0, p2 = 1;
+            for (int i = 0; i < n; i++)
+                for (int j = i + 1; j < n; j++) {
+                    double d = 0;
+                    for (int k = 0; k < 5; k++)
+                        d += pow(v[i].scoruri[k] - v[j].scoruri[k], 2);
+                    d = sqrt(d);
+                    if (d < min_dist) {
+                        min_dist = d;
+                        p1 = i; p2 = j;
+                    }
+                }
+            printf("%s ", v[p1].nume);
+            for (int i = 0; i < 5; i++)
+                printf("%.0f ", v[p1].scoruri[i]);
+            printf("\n");
+            printf("%s ", v[p2].nume);
+            for (int i = 0; i < 5; i++)
+                printf("%.0f ", v[p2].scoruri[i]);
+            printf("\n");
+            break;
+        } else if (comanda == 5) {
+            float medii[5];
+            for (int f = 0; f < 5; f++) {
+                float min = 1e9, max = -1e9, sum = 0;
+                for (int i = 0; i < n; i++) {
+                    float val = v[i].scoruri[f];
+                    if (val < min) min = val;
+                    if (val > max) max = val;
+                    sum += val;
+                }
+                medii[f] = (sum - min - max) / (n - 2);
+            }
+            int idx[5] = {0, 1, 2, 3, 4};
+            for (int i = 0; i < 4; i++)
+                for (int j = i + 1; j < 5; j++)
+                    if (medii[idx[i]] < medii[idx[j]]) {
+                        int aux = idx[i];
+                        idx[i] = idx[j];
+                        idx[j] = aux;
+                    }
+            printf("%d %d %d\n", idx[0], idx[1], idx[2]);
+            break;
+        }
+    }
+    return 0;
+}

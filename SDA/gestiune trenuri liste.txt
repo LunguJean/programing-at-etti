@@ -1,0 +1,203 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+typedef struct Tren {
+    int id;
+    int putere;
+    int vagoane[10];
+    struct Tren *next;
+} Tren;
+
+// Creează un tren nou
+Tren *create() {
+    Tren *nou = malloc(sizeof(Tren));
+    scanf("%d", &nou->id);
+    scanf("%d", &nou->putere);
+    for (int i = 0; i < 10; i++)
+        scanf("%d", &nou->vagoane[i]);
+    nou->next = NULL;
+    return nou;
+}
+
+// Adaugă un tren în listă
+Tren *list(Tren *head) {
+    if (head == NULL)
+        return create();
+    Tren *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = create();
+    return head;
+}
+
+// Afișează toate trenurile (comanda 1)
+void afisare(Tren *head) {
+    Tren *temp = head;
+    while (temp) {
+        printf("%d\n", temp->id);
+        printf("%d\n", temp->putere);
+        for (int i = 0; i < 10; i++)
+            printf("%d ", temp->vagoane[i]);
+        printf("\n");
+        temp = temp->next;
+    }
+}
+
+// Găsește un tren după ID
+Tren *cauta_tren(Tren *head, int id) {
+    Tren *temp = head;
+    while (temp) {
+        if (temp->id == id)
+            return temp;
+        temp = temp->next;
+    }
+    return NULL;
+}
+
+// Comanda 2 — gestionează coborârea pasagerilor
+void gestioneaza_coborare(Tren *tren) {
+    int total = 0;
+    for (int i = 0; i < 10; i++)
+        total += tren->vagoane[i];
+
+    int maxim = tren->putere / 10;
+    if (total <= maxim) {
+        printf("0\n");
+        for (int i = 0; i < 10; i++)
+            printf("%d ", tren->vagoane[i]);
+        printf("\n");
+        return;
+    }
+
+    int exces = total - maxim;
+    printf("%d\n", exces);
+
+    // pasagerii coboară din ultimul vagon ocupat
+    for (int i = 9; i >= 0 && exces > 0; i--) {
+        if (tren->vagoane[i] > 0) {
+            int dif = tren->vagoane[i] < exces ? tren->vagoane[i] : exces;
+            tren->vagoane[i] -= dif;
+            exces -= dif;
+        }
+    }
+
+    for (int i = 0; i < 10; i++)
+        printf("%d ", tren->vagoane[i]);
+    printf("\n");
+}
+
+// Comanda 3 — gestionează urcarea pasagerilor
+void gestioneaza_urcare(Tren *tren, int pasageri) {
+    int total = 0;
+    for (int i = 0; i < 10; i++)
+        total += tren->vagoane[i];
+
+    int maxim = tren->putere / 10;
+    int loc_disponibil = maxim - total;
+
+    if (loc_disponibil <= 0) {
+        printf("%d\n", pasageri);
+        for (int i = 0; i < 10; i++)
+            printf("%d ", tren->vagoane[i]);
+        printf("\n");
+        return;
+    }
+
+    int nepututi = 0;
+    if (pasageri > loc_disponibil) {
+        nepututi = pasageri - loc_disponibil;
+        pasageri = loc_disponibil;
+    }
+
+    printf("%d\n", nepututi);
+
+    // pasagerii urcă din primul vagon
+    for (int i = 0; i < 10 && pasageri > 0; i++) {
+        int loc = 30 - tren->vagoane[i];
+        if (loc > 0) {
+            int urca = (loc < pasageri) ? loc : pasageri;
+            tren->vagoane[i] += urca;
+            pasageri -= urca;
+        }
+    }
+
+    for (int i = 0; i < 10; i++)
+        printf("%d ", tren->vagoane[i]);
+    printf("\n");
+}
+
+// Comanda 4 — transfer pasageri între două trenuri
+void transfer(Tren *sursa, Tren *destinatie, int pasageri) {
+    // Golim din trenul sursă (de la coadă)
+    for (int i = 9; i >= 0 && pasageri > 0; i--) {
+        if (sursa->vagoane[i] > 0) {
+            int dif = (sursa->vagoane[i] < pasageri) ? sursa->vagoane[i] : pasageri;
+            sursa->vagoane[i] -= dif;
+            pasageri -= dif;
+        }
+    }
+
+    // Încărcăm în trenul destinație (de la cap)
+    for (int i = 0; i < 10 && pasageri > 0; i++) {
+        int loc = 30 - destinatie->vagoane[i];
+        int urca = (loc < pasageri) ? loc : pasageri;
+        destinatie->vagoane[i] += urca;
+        pasageri -= urca;
+    }
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+
+    Tren *head = NULL;
+    for (int i = 0; i < n; i++)
+        head = list(head);
+
+    int comanda;
+    scanf("%d", &comanda);
+
+    switch (comanda) {
+        case 1:
+            afisare(head);
+            break;
+
+        case 2: {
+            int id;
+            scanf("%d", &id);
+            Tren *t = cauta_tren(head, id);
+            if (t)
+                gestioneaza_coborare(t);
+            break;
+        }
+
+        case 3: {
+            int id, pasageri;
+            scanf("%d %d", &id, &pasageri);
+            Tren *t = cauta_tren(head, id);
+            if (t)
+                gestioneaza_urcare(t, pasageri);
+            break;
+        }
+
+        case 4: {
+            int id_sursa, id_dest, pasageri;
+            scanf("%d %d %d", &id_sursa, &id_dest, &pasageri);
+            Tren *s = cauta_tren(head, id_sursa);
+            Tren *d = cauta_tren(head, id_dest);
+            if (s && d)
+                transfer(s, d, pasageri);
+            afisare(head);
+            break;
+        }
+    }
+
+    // eliberare memorie
+    while (head) {
+        Tren *aux = head;
+        head = head->next;
+        free(aux);
+    }
+
+    return 0;
+}

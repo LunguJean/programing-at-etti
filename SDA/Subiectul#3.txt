@@ -1,0 +1,79 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct COADA {
+    int timpPrelucrare;
+    struct COADA *urmator;
+};
+
+/* functie data in biblioteca */
+struct COADA* enqueue(struct COADA *head, int tPrelucrare)
+{
+    struct COADA *nodNou, *nodCurent;
+
+    nodNou = (struct COADA*)malloc(sizeof(struct COADA));
+    if (!nodNou) exit(1);
+
+    nodNou->timpPrelucrare = tPrelucrare;
+    nodNou->urmator = NULL;
+
+    if (head == NULL) {
+        return nodNou;
+    }
+
+    nodCurent = head;
+    while (nodCurent->urmator != NULL) {
+        nodCurent = nodCurent->urmator;
+    }
+
+    nodCurent->urmator = nodNou;
+    return head;
+}
+
+/* (1) afisare coada */
+void afisareCoada(struct COADA *head)
+{
+    struct COADA *p = head;
+    while (p != NULL) {
+        printf("%d\n", p->timpPrelucrare);
+        p = p->urmator;
+    }
+}
+
+/* (Bonus) timp total */
+int timpTotal(struct COADA *head)
+{
+    int suma = 0;
+    while (head != NULL) {
+        suma += head->timpPrelucrare;
+        head = head->urmator;
+    }
+    return suma;
+}
+
+int main(void)
+{
+    int n, i, x;
+    struct COADA *par = NULL;
+    struct COADA *impar = NULL;
+
+    scanf("%d", &n);
+
+    for (i = 0; i < n; i++) {
+        scanf("%d", &x);
+
+        if (i % 2 == 0) {
+            par = enqueue(par, x);     /* index par */
+        } else {
+            impar = enqueue(impar, x); /* index impar */
+        }
+    }
+
+    afisareCoada(par);
+    afisareCoada(impar);
+
+    printf("%d\n", timpTotal(par));
+    printf("%d\n", timpTotal(impar));
+
+    return 0;
+}

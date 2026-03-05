@@ -1,0 +1,180 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define MAXS 31
+#define HM_SIZE 7
+
+typedef struct {
+    char user[MAXS];
+    char pass[MAXS];
+    int comp;
+    int order;   // ordinea citirii (pt stabilitate)
+} User;
+
+typedef struct Node {
+    User u;
+    struct Node *next;
+} Node;
+
+static int complexity(const char *p) {
+    int len = (int)strlen(p);
+    int upper = 0;
+    int digit_or_sym = 0;
+
+    for (int i = 0; p[i]; i++) {
+        unsigned char c = (unsigned char)p[i];
+        if (isupper(c)) upper++;
+        if (isdigit(c) || ispunct(c)) digit_or_sym++;
+    }
+
+    return len + upper + 2 * digit_or_sym;
+}
+
+static int hash_pass(const char *p) {
+    int sum = 0;
+    for (int i = 0; p[i]; i++) sum += (unsigned char)p[i];
+    return sum % HM_SIZE;
+}
+
+static Node *node_new(const User *u) {
+    Node *n = (Node*)malloc(sizeof(Node));
+    if (!n) exit(1);
+    n->u = *u;
+    n->next = NULL;
+    return n;
+}
+
+/*
+ * Inserare in lista (bucket) crescator dupa comp,
+ * iar la egalitate dupa order (ordinea citirii).
+ */
+static void insert_sorted_bucket(Node **head, const User *u) {
+    Node *nou = node_new(u);
+
+    if (*head == NULL ||
+        (*head)->u.comp > u->comp ||
+        ((*head)->u.comp == u->comp && (*head)->u.order > u->order)) {
+        nou->next = *head;
+        *head = nou;
+        return;
+    }
+
+    Node *cur = *head;
+    while (cur->next &&
+           (cur->next->u.comp < u->comp ||
+            (cur->next->u.comp == u->comp && cur->next->u.order < u->order))) {
+        cur = cur->next;
+    }
+
+    nou->next = cur->next;
+    cur->next = nou;
+}
+
+static void free_table(Node *table[HM_SIZE]) {
+    for (int i = 0; i < HM_SIZE; i++) {
+        Node *cur = table[i];
+        while (cur) {
+            Node *nx = cur->next;
+            free(cur);
+            cur = nx;
+        }
+        table[i] = NULL;
+    }
+}
+
+/* sortare stabila O(n^2) (n mic la colocviu, perfect) */
+static void stable_sort_by_comp(User *v, int n) {
+    for (int i = 0; i < n - 1; i++) {
+        int min = i;
+        for (int j = i + 1; j < n; j++) {
+            if (v[j].comp < v[min].comp) min = j;
+            // la egalitate nu schimbam (stabil)
+        }
+        if (min != i) {
+            User tmp = v[min];
+            for (int k = min; k > i; k--) v[k] = v[k - 1];
+            v[i] = tmp;
+        }
+    }
+}
+
+int main(void) {
+    // citire pana la STOP: pe aceeasi linie username parola
+    int cap = 16, n = 0;
+    User *v = (User*)malloc((size_t)cap * sizeof(User));
+    if (!v) exit(1);
+
+    char user[MAXS], pass[MAXS];
+    int ord = 0;
+
+    while (scanf("%30s", user) == 1) {
+        if (strcmp(user, "STOP") == 0) break;
+        if (scanf("%30s", pass) != 1) break;
+
+        if (n == cap) {
+            cap *= 2;
+            v = (User*)realloc(v, (size_t)cap * sizeof(User));
+            if (!v) exit(1);
+        }
+
+        strncpy(v[n].user, user, MAXS - 1);
+        v[n].user[MAXS - 1] = '\0';
+        strncpy(v[n].pass, pass, MAXS - 1);
+        v[n].pass[MAXS - 1] = '\0';
+        v[n].comp = complexity(v[n].pass);
+        v[n].order = ord++;
+        n++;
+    }
+
+    int cmd;
+    if (scanf("%d", &cmd) != 1) {
+        free(v);
+        return 0;
+    }
+
+    if (cmd == 1) {
+        for (int i = 0; i < n; i++) {
+            printf("%s %s\n", v[i].user, v[i].pass);
+        }
+    } else if (cmd == 2) {
+        for (int i = 0; i < n; i++) {
+            printf("%s %s %d\n", v[i].user, v[i].pass, v[i].comp);
+        }
+    } else if (cmd == 3) {
+        // sortare stabila dupa complexitate
+        User *copy = (User*)malloc((size_t)n * sizeof(User));
+        if (!copy) exit(1);
+        memcpy(copy, v, (size_t)n * sizeof(User));
+
+        stable_sort_by_comp(copy, n);
+
+        for (int i = 0; i < n; i++) {
+            printf("%s %s %d\n", copy[i].user, copy[i].pass, copy[i].comp);
+        }
+        free(copy);
+    } else if (cmd == 4) {
+        Node *table[HM_SIZE] = {0};
+
+        // inseram in hashmap in bucket-ul hash(parola), ordonat dupa comp (+ order)
+        for (int i = 0; i < n; i++) {
+            int idx = hash_pass(v[i].pass);
+            insert_sorted_bucket(&table[idx], &v[i]);
+        }
+
+        // afisam username-urile in ordinea bucket-urilor 0..6
+        for (int i = 0; i < HM_SIZE; i++) {
+            Node *cur = table[i];
+            while (cur) {
+                printf("%s\n", cur->u.user);
+                cur = cur->next;
+            }
+        }
+
+        free_table(table);
+    }
+
+    free(v);
+    return 0;
+}

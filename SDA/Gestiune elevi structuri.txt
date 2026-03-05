@@ -1,0 +1,113 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// definirea structurii
+struct Elev {
+    char nume[21];
+    char cod[21];
+    int note[9];
+    float medie;
+};
+
+// funcția care afișează toți elevii (comanda 1)
+void afisare(struct Elev *elevi, int n) {
+    for (int i = 0; i < n; i++) {
+        printf("%s\n", elevi[i].nume);
+        printf("%s\n", elevi[i].cod);
+        for (int j = 0; j < 9; j++) {
+            printf("%d ", elevi[i].note[j]);
+        }
+        printf("\n");
+    }
+}
+
+// funcția care calculează media unui elev
+float calculeaza_medie(struct Elev e) {
+    float suma = 0;
+    for (int i = 0; i < 9; i++)
+        suma += e.note[i];
+    return suma / 9.0;
+}
+
+// funcția care afișează elevul cu cea mai mare medie (comanda 2)
+void cel_mai_bun(struct Elev *elevi, int n) {
+    float max = elevi[0].medie;
+    int poz = 0;
+    for (int i = 1; i < n; i++) {
+        if (elevi[i].medie > max) {
+            max = elevi[i].medie;
+            poz = i;
+        }
+    }
+    printf("%s\n", elevi[poz].nume);
+}
+
+// funcția care afișează elevii cu media < 6 (comanda 3)
+void medie_sub6(struct Elev *elevi, int n) {
+    for (int i = 0; i < n; i++) {
+        if (elevi[i].medie < 6)
+            printf("%s\n", elevi[i].nume);
+    }
+}
+
+// funcție pentru sortare crescătoare (pentru mediană)
+int cmp_int(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
+
+// funcția care afișează valoarea mediană pentru un elev (comanda 4)
+void mediana(struct Elev *elevi, int n, char cod_input[21]) {
+    for (int i = 0; i < n; i++) {
+        if (strcmp(elevi[i].cod, cod_input) == 0) {
+            int temp[9];
+            for (int j = 0; j < 9; j++)
+                temp[j] = elevi[i].note[j];
+            qsort(temp, 9, sizeof(int), cmp_int);
+            printf("%d\n", temp[4]);  // valoarea mediană (a 5-a notă după sortare)
+            return;
+        }
+    }
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+
+    struct Elev *elevi = malloc(n * sizeof(struct Elev));
+
+    // citire elevi
+    for (int i = 0; i < n; i++) {
+        scanf("%s", elevi[i].nume);
+        scanf("%s", elevi[i].cod);
+        for (int j = 0; j < 9; j++)
+            scanf("%d", &elevi[i].note[j]);
+        elevi[i].medie = calculeaza_medie(elevi[i]);
+    }
+
+    int comanda;
+    scanf("%d", &comanda);
+
+    switch (comanda) {
+        case 1:
+            afisare(elevi, n);
+            break;
+        case 2:
+            cel_mai_bun(elevi, n);
+            break;
+        case 3:
+            medie_sub6(elevi, n);
+            break;
+        case 4: {
+            char cod_input[21];
+            scanf("%s", cod_input);
+            mediana(elevi, n, cod_input);
+            break;
+        }
+        default:
+            printf("Comanda invalida!\n");
+    }
+
+    free(elevi);
+    return 0;
+}

@@ -1,0 +1,124 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Examen {
+    char nume[21];
+    struct Examen *next;
+} Examen;
+
+// Creare nod
+Examen *create() {
+    Examen *nou = malloc(sizeof(Examen));
+    scanf("%s", nou->nume);
+    nou->next = NULL;
+    return nou;
+}
+
+// Adăugare nod în listă
+Examen *list(Examen *head) {
+    if (head == NULL)
+        return create();
+    Examen *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = create();
+    return head;
+}
+
+// Afișare istoric
+void afisare(Examen *head) {
+    while (head) {
+        printf("%s\n", head->nume);
+        head = head->next;
+    }
+}
+
+// Inversare în grupuri de k (recursiv)
+Examen* inversare_grup(Examen *head, int k) {
+    Examen *cur = head, *prev = NULL, *next = NULL;
+    int count = 0;
+
+    // Inversăm primele k noduri
+    while (cur && count < k) {
+        next = cur->next;
+        cur->next = prev;
+        prev = cur;
+        cur = next;
+        count++;
+    }
+
+    // Recursiv pentru restul
+    if (next)
+        head->next = inversare_grup(next, k);
+
+    return prev;
+}
+
+// Elimină elementele de pe poziții divizibile cu 7
+Examen* elimina_div7(Examen *head) {
+    Examen *temp = head, *prev = NULL;
+    int poz = 1;
+
+    while (temp) {
+        if (poz % 7 == 0) {
+            Examen *del = temp;
+            if (prev)
+                prev->next = temp->next;
+            else
+                head = temp->next;
+            temp = temp->next;
+            free(del);
+            poz++;
+            continue;
+        }
+        prev = temp;
+        temp = temp->next;
+        poz++;
+    }
+
+    return head;
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+
+    Examen *head = NULL;
+    for (int i = 0; i < n; i++)
+        head = list(head);
+
+    int c;
+    scanf("%d", &c);
+
+    switch (c) {
+        case 1:
+            afisare(head);
+            break;
+        case 2:
+            head = inversare_grup(head, 3);
+            afisare(head);
+            break;
+        case 3: {
+            int k;
+            scanf("%d", &k);
+            head = inversare_grup(head, k);
+            afisare(head);
+            break;
+        }
+        case 4:
+            head = inversare_grup(head, 3);
+            head = elimina_div7(head);
+            afisare(head);
+            break;
+    }
+
+    // eliberare memorie
+    while (head) {
+        Examen *aux = head;
+        head = head->next;
+        free(aux);
+    }
+
+    return 0;
+}

@@ -1,0 +1,183 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Client {
+    char nume[21];
+    int produse;
+};
+
+// Comanda 1 – afișare simplă
+void afisare(struct Client *clienti, int n) {
+    for (int i = 0; i < n; i++) {
+        printf("%s %d\n", clienti[i].nume, clienti[i].produse);
+    }
+}
+
+// Comanda 2 – distribuire pe casa cu cele mai puține produse
+void distribuire_optim(struct Client *clienti, int n, int nr_case) {
+    int *total_case = calloc(nr_case, sizeof(int));  // total produse la fiecare casă
+    int *ordine_case = calloc(nr_case, sizeof(int)); // 0 dacă n-a primit niciun client
+    int nr_ordine = 0;
+
+    // vector de vectori de indici: casele
+    int **case_clienti = malloc(nr_case * sizeof(int*));
+    int *dim_case = calloc(nr_case, sizeof(int));
+    for (int i = 0; i < nr_case; i++)
+        case_clienti[i] = NULL;
+
+    for (int i = 0; i < n; i++) {
+        // găsim casa cu cele mai puține produse
+        int min_index = 0;
+        for (int j = 1; j < nr_case; j++)
+            if (total_case[j] < total_case[min_index])
+                min_index = j;
+
+        // adăugăm clientul la casa aleasă
+        dim_case[min_index]++;
+        case_clienti[min_index] = realloc(case_clienti[min_index],
+                                          dim_case[min_index] * sizeof(int));
+        case_clienti[min_index][dim_case[min_index] - 1] = i;
+        total_case[min_index] += clienti[i].produse;
+
+        if (!ordine_case[min_index])
+            ordine_case[min_index] = ++nr_ordine;
+    }
+
+    // afișăm casele în ordinea în care au primit primul client
+    for (int ord = 1; ord <= nr_ordine; ord++) {
+        for (int i = 0; i < nr_case; i++) {
+            if (ordine_case[i] == ord) {
+                for (int j = 0; j < dim_case[i]; j++) {
+                    int idx = case_clienti[i][j];
+                    printf("%s %d\n", clienti[idx].nume, clienti[idx].produse);
+                }
+            }
+        }
+    }
+
+    // eliberare memorie
+    for (int i = 0; i < nr_case; i++)
+        free(case_clienti[i]);
+    free(case_clienti);
+    free(dim_case);
+    free(total_case);
+    free(ordine_case);
+}
+
+// Comanda 3 – distribuire round-robin și ordinea ieșirii clienților
+void distribuire_round_robin(struct Client *clienti, int n, int nr_case) {
+    int **case_clienti = malloc(nr_case * sizeof(int*));
+    int *dim_case = calloc(nr_case, sizeof(int));
+    int *timp = calloc(nr_case, sizeof(int)); // timp total per casă
+
+    for (int i = 0; i < nr_case; i++)
+        case_clienti[i] = NULL;
+
+    // round-robin
+    for (int i = 0; i < n; i++) {
+        int index = i % nr_case;
+        dim_case[index]++;
+        case_clienti[index] = realloc(case_clienti[index],
+                                      dim_case[index] * sizeof(int));
+        case_clienti[index][dim_case[index] - 1] = i;
+    }
+
+    // simulăm ieșirea clienților
+    int *poz = calloc(nr_case, sizeof(int));
+    int clienti_ramasi = n;
+
+    while (clienti_ramasi > 0) {
+        int min_casa = -1;
+        int min_timp = 1e9;
+
+        for (int i = 0; i < nr_case; i++) {
+            if (poz[i] < dim_case[i]) {
+                int t = timp[i] + clienti[case_clienti[i][poz[i]]].produse;
+                if (t < min_timp) {
+                    min_timp = t;
+                    min_casa = i;
+                }
+            }
+        }
+
+        int idx = case_clienti[min_casa][poz[min_casa]];
+        printf("%s %d\n", clienti[idx].nume, clienti[idx].produse);
+
+        timp[min_casa] += clienti[idx].produse;
+        poz[min_casa]++;
+        clienti_ramasi--;
+    }
+
+    // eliberare
+    for (int i = 0; i < nr_case; i++)
+        free(case_clienti[i]);
+    free(case_clienti);
+    free(dim_case);
+    free(poz);
+    free(timp);
+}
+
+// Funcție care calculează timpul total (timpul maxim dintre case)
+int timp_total(struct Client *clienti, int n, int nr_case, int mod) {
+    int *total_case = calloc(nr_case, sizeof(int));
+
+    for (int i = 0; i < n; i++) {
+        int index;
+        if (mod == 2) {
+            // modul optim
+            int min_index = 0;
+            for (int j = 1; j < nr_case; j++)
+                if (total_case[j] < total_case[min_index])
+                    min_index = j;
+            index = min_index;
+        } else {
+            // round-robin
+            index = i % nr_case;
+        }
+        total_case[index] += clienti[i].produse;
+    }
+
+    int max = total_case[0];
+    for (int i = 1; i < nr_case; i++)
+        if (total_case[i] > max)
+            max = total_case[i];
+
+    free(total_case);
+    return max;
+}
+
+int main() {
+    int nr_case, n;
+    scanf("%d %d", &nr_case, &n);
+
+    struct Client *clienti = malloc(n * sizeof(struct Client));
+    for (int i = 0; i < n; i++)
+        scanf("%s %d", clienti[i].nume, &clienti[i].produse);
+
+    int comanda;
+    scanf("%d", &comanda);
+
+    switch (comanda) {
+        case 1:
+            afisare(clienti, n);
+            break;
+        case 2:
+            distribuire_optim(clienti, n, nr_case);
+            break;
+        case 3:
+            distribuire_round_robin(clienti, n, nr_case);
+            break;
+        case 4: {
+            int t2 = timp_total(clienti, n, nr_case, 2);
+            int t3 = timp_total(clienti, n, nr_case, 3);
+            printf("%d\n", t2 - t3);
+            break;
+        }
+        default:
+            break;
+    }
+
+    free(clienti);
+    return 0;
+}

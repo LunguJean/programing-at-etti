@@ -1,0 +1,116 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Directie {
+    char sens[20];
+    struct Directie *next;
+} Directie;
+
+// Adăugare direcție în listă
+Directie *adauga_directie(Directie *head) {
+    Directie *nou = malloc(sizeof(Directie));
+    scanf("%s", nou->sens);
+    nou->next = NULL;
+
+    if (head == NULL)
+        return nou;
+
+    Directie *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = nou;
+    return head;
+}
+
+// Afișare direcții în ordinea citirii (comanda 2)
+void afisare(Directie *head) {
+    while (head) {
+        printf("%s\n", head->sens);
+        head = head->next;
+    }
+}
+
+// Direcția opusă pentru întoarcere acasă (comanda 3)
+char *opusa(char *sens) {
+    if (strcmp(sens, "sus") == 0) return "jos";
+    if (strcmp(sens, "jos") == 0) return "sus";
+    if (strcmp(sens, "stanga") == 0) return "dreapta";
+    if (strcmp(sens, "dreapta") == 0) return "stanga";
+    return "";
+}
+
+// Întoarcerea acasă (comanda 3)
+void intoarcere_acasa(Directie *head) {
+    if (!head) return;
+    // salvăm direcțiile în vector pentru parcurgere inversă
+    char v[1000][20];
+    int n = 0;
+    while (head) {
+        strcpy(v[n++], head->sens);
+        head = head->next;
+    }
+    for (int i = n - 1; i >= 0; i--)
+        printf("%s\n", opusa(v[i]));
+}
+
+// Actualizează poziția curentă (comanda 4)
+void pozitie_curenta(Directie *head, int start_x, int start_y, int obstacol_x, int obstacol_y, int are_obstacol) {
+    int x = start_x, y = start_y;
+    while (head) {
+        int nx = x, ny = y;
+        if (strcmp(head->sens, "sus") == 0) nx--;
+        else if (strcmp(head->sens, "jos") == 0) nx++;
+        else if (strcmp(head->sens, "stanga") == 0) ny--;
+        else if (strcmp(head->sens, "dreapta") == 0) ny++;
+
+        if (are_obstacol && nx == obstacol_x && ny == obstacol_y)
+            break;
+
+        x = nx; y = ny;
+        head = head->next;
+    }
+    printf("%d %d\n", x, y);
+}
+
+int main() {
+    int m, n;
+    scanf("%d %d", &m, &n);
+    int x, y;
+    scanf("%d %d", &x, &y);
+
+    Directie *head = NULL;
+    int obstacol_x = -1, obstacol_y = -1, are_obstacol = 0;
+
+    while (1) {
+        int comanda;
+        scanf("%d", &comanda);
+
+        switch (comanda) {
+            case 1:
+                head = adauga_directie(head);
+                break;
+            case 2:
+                afisare(head);
+                break;
+            case 3:
+                intoarcere_acasa(head);
+                break;
+            case 4:
+                pozitie_curenta(head, x, y, obstacol_x, obstacol_y, are_obstacol);
+                break;
+            case 5:
+                scanf("%d %d", &obstacol_x, &obstacol_y);
+                are_obstacol = 1;
+                break;
+            case 6:
+                // eliberare memorie
+                while (head) {
+                    Directie *aux = head;
+                    head = head->next;
+                    free(aux);
+                }
+                return 0;
+        }
+    }
+}

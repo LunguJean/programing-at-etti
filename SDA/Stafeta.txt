@@ -1,0 +1,107 @@
+#include <stdio.h>
+
+struct Stafeta {
+    char p1[11];
+    char p2[11];
+    double timp;
+};
+
+/* 1 */
+void afisare(struct Stafeta *s, int n)
+{
+    for (int i = 0; i < n; i++)
+        printf("%s %s %.2f\n", s[i].p1, s[i].p2, s[i].timp);
+}
+
+/* 2 */
+void timpMinim(struct Stafeta *s, int n)
+{
+    int idx = 0;
+    for (int i = 1; i < n; i++)
+        if (s[i].timp < s[idx].timp)
+            idx = i;
+
+    printf("%s %s %.2f\n", s[idx].p1, s[idx].p2, s[idx].timp);
+}
+
+/* 3 */
+void pesteMedie(struct Stafeta *s, int n)
+{
+    double suma = 0;
+    for (int i = 0; i < n; i++)
+        suma += s[i].timp;
+
+    double medie = suma / n;
+
+    for (int i = 0; i < n; i++)
+        if (s[i].timp > medie)
+            printf("%s %s %.2f\n", s[i].p1, s[i].p2, s[i].timp);
+}
+
+/* 4 */
+void stafetaProgresiva(struct Stafeta *s, int n)
+{
+    int afisat[100] = {0};
+
+    for (int k = 0; k < n; k++) {
+        int idx = -1;
+        for (int i = 0; i < n; i++) {
+            if (!afisat[i]) {
+                if (idx == -1 || s[i].timp < s[idx].timp)
+                    idx = i;
+            }
+        }
+        printf("%s %s %.2f\n", s[idx].p1, s[idx].p2, s[idx].timp);
+        afisat[idx] = 1;
+    }
+}
+
+/* 5 (bonus) */
+void stafetaPremii(struct Stafeta *s, int n)
+{
+    int folosit[100] = {0};
+    int premii[3] = {10000, 5000, 2000};
+
+    for (int loc = 0; loc < 3; loc++) {
+        int idx = -1;
+        for (int i = 0; i < n; i++) {
+            if (!folosit[i]) {
+                if (idx == -1 || s[i].timp < s[idx].timp)
+                    idx = i;
+            }
+        }
+        int suma = premii[loc] / 2;
+        printf("%s %d %s %d\n", s[idx].p1, suma, s[idx].p2, suma);
+        folosit[idx] = 1;
+    }
+}
+
+int main(void)
+{
+    int n;
+    struct Stafeta stafete[100];
+    int comanda;
+
+    scanf("%d", &n);
+
+    for (int i = 0; i < n; i++) {
+        scanf("%s", stafete[i].p1);
+        scanf("%s", stafete[i].p2);
+        scanf("%lf", &stafete[i].timp);
+    }
+
+    scanf("%d", &comanda);
+
+    if (comanda == 1)
+        afisare(stafete, n);
+    else if (comanda == 2)
+        timpMinim(stafete, n);
+    else if (comanda == 3)
+        pesteMedie(stafete, n);
+    else if (comanda == 4)
+        stafetaProgresiva(stafete, n);
+    else if (comanda == 5)
+        stafetaPremii(stafete, n);
+
+    return 0;
+}

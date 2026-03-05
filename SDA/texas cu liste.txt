@@ -1,0 +1,261 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Player {
+    char name[21];
+    int hand[2];
+    int best[5];
+    int points;
+    struct Player *next;
+} Player;
+
+// funcție de sortare pentru vectori de int
+int cmp_int(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
+
+// creează un nod nou (un jucător)
+Player *create() {
+    Player *new_player = malloc(sizeof(Player));
+    scanf("%s %d %d", new_player->name, &new_player->hand[0], &new_player->hand[1]);
+    new_player->points = 0;
+    new_player->next = NULL;
+    return new_player;
+}
+
+// adaugă un jucător la sfârșitul listei
+Player *list(Player *head) {
+    if (head == NULL)
+        return create();
+    Player *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = create();
+    return head;
+}
+
+// afișează toți jucătorii + cărțile comune (comanda 1)
+void afisare(Player *head, int common[5]) {
+    Player *temp = head;
+    while (temp) {
+        printf("%s\n", temp->name);
+        printf("%d %d \n", temp->hand[0], temp->hand[1]);
+        temp = temp->next;
+    }
+    for (int i = 0; i < 5; i++)
+        printf("%d ", common[i]);
+    printf("\n");
+}
+
+// verifică dacă un jucător are chintă (5 consecutive)
+void check_straight(Player *p, int common[5]) {
+    int all[7];
+    all[0] = p->hand[0];
+    all[1] = p->hand[1];
+    for (int i = 0; i < 5; i++)
+        all[i + 2] = common[i];
+    qsort(all, 7, sizeof(int), cmp_int);
+
+    // elimină duplicate
+    int uniq[7], m = 0;
+    for (int i = 0; i < 7; i++)
+        if (i == 0 || all[i] != all[i - 1])
+            uniq[m++] = all[i];
+
+    // caută secvență de 5 consecutive
+    for (int i = 0; i <= m - 5; i++) {
+        int ok = 1;
+        for (int j = 0; j < 4; j++)
+            if (uniq[i + j + 1] != uniq[i + j] + 1)
+                ok = 0;
+        if (ok) {
+            printf("%s\n", p->name);
+            for (int j = 0; j < 5; j++)
+                printf("%d ", uniq[i + j]);
+            printf("\n");
+            return;
+        }
+    }
+}
+
+// construiește cea mai bună mână + calculează punctajul (comanda 3)
+void best_hand(Player *p, int common[5]) {
+    int all[7];
+    all[0] = p->hand[0];
+    all[1] = p->hand[1];
+    for (int i = 0; i < 5; i++)
+        all[i + 2] = common[i];
+    qsort(all, 7, sizeof(int), cmp_int);
+
+    int freq[15] = {0};
+    for (int i = 0; i < 7; i++)
+        freq[all[i]]++;
+
+    int idx = 0;
+    p->points = 0;
+
+    // 3 cărți de un fel = 3 puncte
+    for (int v = 2; v <= 14; v++) {
+        if (freq[v] >= 3) {
+            p->points += 3;
+            for (int j = 0; j < 3 && idx < 5; j++)
+                p->best[idx++] = v;
+            freq[v] = 0;
+        }
+    }
+
+    // 2 cărți de un fel = 1 punct
+    for (int v = 2; v <= 14; v++) {
+        if (freq[v] >= 2) {
+            p->points += 1;
+            for (int j = 0; j < 2 && idx < 5; j++)
+                p->best[idx++] = v;
+            freq[v] = 0;
+        }
+    }
+
+    // completăm cu cele mai mari cărți
+    for (int i = 6; i >= 0 && idx < 5; i--) {
+        int v = all[i];
+        if (freq[v] > 0) {
+            p->best[idx++] = v;
+            freq[v]--;
+        }
+    }
+
+    qsort(p->best, 5, sizeof(int), cmp_int);
+}
+
+// compară două mâini pentru ordonare (comanda 4)
+int compare_players(Player *a, Player *b) {
+    if (a->points != b->points)
+        return b->points - a->points;
+    for (int i = 4; i >= 0; i--) {
+        if (a->best[i] != b->best[i])
+            return b->best[i] - a->best[i];
+    }
+    return 0;
+}
+
+// sortare după punctaj și valoare cărți (bubble sort pe listă)
+Player *sort_players(Player *head) {
+    if (head == NULL) return head;
+    int swapped;
+    Player *ptr1;
+    Player *lptr = NULL;
+    do {
+        swapped = 0;
+        ptr1 = head;
+        while (ptr1->next != lptr) {
+            if (compare_players(ptr1, ptr1->next) > 0) {
+                Player temp = *ptr1;
+                *ptr1 = *(ptr1->next);
+                *(ptr1->next) = temp;
+
+                // refacem legăturile next după swap
+                Player *aux = ptr1->next->next;
+                ptr1->next->next = ptr1;
+                ptr1->next = aux;
+
+                swapped = 1;
+            }
+            ptr1 = ptr1->next;
+        }
+        lptr = ptr1;
+    } while (swapped);
+    return head;
+}
+
+// Afișează mâna fiecărui jucător (comanda 3)
+void afisare_best(Player *head, int common[5]) {
+    Player *temp = head;
+    while (temp) {
+        best_hand(temp, common);
+        printf("%s\n", temp->name);
+        for (int i = 0; i < 5; i++)
+            printf("%d ", temp->best[i]);
+        printf("\n");
+        temp = temp->next;
+    }
+}
+
+// Afișează jucătorii sortați (comanda 4)
+void afisare_sortata(Player *head, int common[5]) {
+    Player *temp = head;
+    while (temp) {
+        best_hand(temp, common);
+        temp = temp->next;
+    }
+
+    // sortare simplă (prin conversie în vector)
+    int n = 0;
+    temp = head;
+    while (temp) { n++; temp = temp->next; }
+
+    Player **arr = malloc(n * sizeof(Player*));
+    temp = head;
+    for (int i = 0; i < n; i++) {
+        arr[i] = temp;
+        temp = temp->next;
+    }
+
+    for (int i = 0; i < n - 1; i++)
+        for (int j = i + 1; j < n; j++)
+            if (compare_players(arr[i], arr[j]) > 0) {
+                Player *aux = arr[i];
+                arr[i] = arr[j];
+                arr[j] = aux;
+            }
+
+    for (int i = 0; i < n; i++)
+        printf("%s\n", arr[i]->name);
+
+    free(arr);
+}
+
+// 🟢 Program principal
+int main() {
+    int n;
+    scanf("%d", &n);
+
+    Player *head = NULL;
+    for (int i = 0; i < n; i++)
+        head = list(head);
+
+    int common[5];
+    for (int i = 0; i < 5; i++)
+        scanf("%d", &common[i]);
+
+    int c;
+    scanf("%d", &c);
+
+    switch (c) {
+        case 1:
+            afisare(head, common);
+            break;
+        case 2: {
+            Player *temp = head;
+            while (temp) {
+                check_straight(temp, common);
+                temp = temp->next;
+            }
+            break;
+        }
+        case 3:
+            afisare_best(head, common);
+            break;
+        case 4:
+            afisare_sortata(head, common);
+            break;
+    }
+
+    // eliberare memorie
+    while (head) {
+        Player *aux = head;
+        head = head->next;
+        free(aux);
+    }
+
+    return 0;
+}

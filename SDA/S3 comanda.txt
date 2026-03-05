@@ -1,0 +1,57 @@
+#include <stdio.h>
+#include <string.h>
+
+struct Comanda {
+    char text[20];
+};
+
+int esteSterge(char *s)
+{
+    return strcmp(s, "sterge") == 0;
+}
+
+int esteExecuta(char *s)
+{
+    return strcmp(s, "executa") == 0;
+}
+
+int main(void)
+{
+    int test;
+    struct Comanda comenzi[1000];
+    int top = 0;   /* numar comenzi stocate */
+
+    scanf("%d", &test);
+
+    /* citire pana la EOF */
+    while (1) {
+        char cmd[20];
+        if (scanf("%s", cmd) != 1)
+            break;
+
+        /* Test 1: pastram TOT */
+        if (test == 1) {
+            strcpy(comenzi[top++].text, cmd);
+        }
+        /* Test 2: aplicam stergeri */
+        else {
+            if (esteSterge(cmd)) {
+                if (top > 0)
+                    top--;     /* stergem ultima comanda */
+            }
+            else if (esteExecuta(cmd)) {
+                break;         /* nu se afiseaza */
+            }
+            else {
+                strcpy(comenzi[top++].text, cmd);
+            }
+        }
+    }
+
+    /* afisare */
+    for (int i = 0; i < top; i++) {
+        printf("%s\n", comenzi[i].text);
+    }
+
+    return 0;
+}

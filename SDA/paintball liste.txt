@@ -1,0 +1,169 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Jucator {
+    char nume[20];
+    int echipa;
+    int hitpoints;
+    struct Jucator *next;
+} Jucator;
+
+// Creare nod
+Jucator *create() {
+    Jucator *nou = malloc(sizeof(Jucator));
+    scanf("%s", nou->nume);
+    scanf("%d", &nou->echipa);
+    scanf("%d", &nou->hitpoints);
+    nou->next = NULL;
+    return nou;
+}
+
+// Adăugare jucător în listă
+Jucator *list(Jucator *head) {
+    if (head == NULL)
+        return create();
+    Jucator *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = create();
+    return head;
+}
+
+// Afișare echipe (comanda 1)
+void afisare(Jucator *head) {
+    Jucator *temp = head;
+    while (temp) {
+        if (temp->echipa == 1)
+            printf("%s %d %d\n", temp->nume, temp->echipa, temp->hitpoints);
+        temp = temp->next;
+    }
+    temp = head;
+    while (temp) {
+        if (temp->echipa == 2)
+            printf("%s %d %d\n", temp->nume, temp->echipa, temp->hitpoints);
+        temp = temp->next;
+    }
+}
+
+// Determină cea mai robustă echipă (comanda 2)
+void cea_mai_robusta(Jucator *head) {
+    int hp1 = 0, hp2 = 0;
+    while (head) {
+        if (head->echipa == 1)
+            hp1 += head->hitpoints;
+        else
+            hp2 += head->hitpoints;
+        head = head->next;
+    }
+    if (hp1 >= hp2)
+        printf("1\n");
+    else
+        printf("2\n");
+}
+
+// Returnează pointer la jucătorul de index x dintr-o echipă
+Jucator *get_player(Jucator *head, int echipa, int index) {
+    int cnt = 0;
+    while (head) {
+        if (head->echipa == echipa && head->hitpoints > 0) {
+            if (cnt == index) return head;
+            cnt++;
+        }
+        head = head->next;
+    }
+    return NULL;
+}
+
+// Elimină jucătorii cu 0 HP
+Jucator *sterge_eliminati(Jucator *head) {
+    Jucator *temp = head, *prev = NULL;
+    while (temp) {
+        if (temp->hitpoints <= 0) {
+            if (prev == NULL) {
+                head = temp->next;
+                free(temp);
+                temp = head;
+            } else {
+                prev->next = temp->next;
+                free(temp);
+                temp = prev->next;
+            }
+        } else {
+            prev = temp;
+            temp = temp->next;
+        }
+    }
+    return head;
+}
+
+// Simulare joc (comanda 3)
+void joc_scor(Jucator *head, int comanda4) {
+    int scor1 = 0, scor2 = 0;
+    int tura = 1;
+    int val;
+
+    while (1) {
+        scanf("%d", &val);
+        if (val == 100)
+            break;
+        if (val == -1) {
+            tura = 3 - tura; // schimb echipa
+            continue;
+        }
+
+        Jucator *target = get_player(head, 3 - tura, val);
+        if (target) {
+            target->hitpoints--;
+            if (tura == 1)
+                scor1++;
+            else
+                scor2++;
+        }
+
+        head = sterge_eliminati(head);
+        tura = 3 - tura; // schimb echipa
+    }
+
+    if (comanda4 == 0) {
+        printf("%d\n%d\n", scor1, scor2);
+    } else {
+        afisare(head);
+    }
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+
+    Jucator *head = NULL;
+    for (int i = 0; i < n; i++)
+        head = list(head);
+
+    int c;
+    scanf("%d", &c);
+
+    switch (c) {
+        case 1:
+            afisare(head);
+            break;
+        case 2:
+            cea_mai_robusta(head);
+            break;
+        case 3:
+            joc_scor(head, 0);
+            break;
+        case 4:
+            joc_scor(head, 1);
+            break;
+    }
+
+    // eliberare memorie
+    while (head) {
+        Jucator *aux = head;
+        head = head->next;
+        free(aux);
+    }
+
+    return 0;
+}

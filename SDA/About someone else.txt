@@ -1,0 +1,168 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+/* ================= STRUCTURI ================= */
+
+typedef struct Node {
+    char denumire[21];
+    char culoare[21];
+    int marime;
+    int raw_hash;          // hash fara modulo (pt cerinta 3)
+    struct Node *next;
+} Node;
+
+typedef struct {
+    Node **buckets;
+    int size;
+} HashMap;
+
+/* ================= FUNCTII UTILE ================= */
+
+int ascii_sum(const char *s) {
+    int sum = 0;
+    for (int i = 0; s[i]; i++)
+        sum += (unsigned char)s[i];
+    return sum;
+}
+
+int compute_raw_hash(const char *den, const char *col, int mar) {
+    return ascii_sum(den) + ascii_sum(col) + mar;
+}
+
+int hash_index(int raw, int m) {
+    int r = raw % m;
+    if (r < 0) r += m;
+    return r;
+}
+
+/* ================= HASHMAP (CHAINING) ================= */
+
+HashMap *create_map(int m) {
+    HashMap *h = malloc(sizeof(HashMap));
+    h->size = m;
+    h->buckets = calloc(m, sizeof(Node*));
+    return h;
+}
+
+void insert(HashMap *h, const char *den, int mar, const char *col, int raw) {
+    int idx = hash_index(raw, h->size);
+
+    Node *n = malloc(sizeof(Node));
+    strcpy(n->denumire, den);
+    strcpy(n->culoare, col);
+    n->marime = mar;
+    n->raw_hash = raw;
+    n->next = NULL;
+
+    if (!h->buckets[idx]) {
+        h->buckets[idx] = n;
+    } else {
+        Node *p = h->buckets[idx];
+        while (p->next) p = p->next;
+        p->next = n;                 // adaugare la SFARSIT (chaining)
+    }
+}
+
+/* ================= CERINTA 1 ================= */
+
+void cmd1(Node *list) {
+    while (list) {
+        printf("%s %d %s\n", list->denumire, list->marime, list->culoare);
+        list = list->next;
+    }
+}
+
+/* ================= CERINTA 2 ================= */
+
+void cmd2(HashMap *h) {
+    for (int i = 0; i < h->size; i++) {
+        Node *p = h->buckets[i];
+        while (p) {
+            printf("%s %d %s %d\n",
+                   p->denumire, p->marime, p->culoare, i);
+            p = p->next;
+        }
+    }
+}
+
+/* ================= CERINTA 3 ================= */
+/*
+   Hashmap-uri identice intre chaining si open addressing
+   => niciun conflict la hashing
+   => raw_hash % m trebuie sa fie DISTINCT pentru toate elementele
+*/
+
+int ok_dim(int *hashes, int n, int m) {
+    for (int i = 0; i < n; i++) {
+        for (int j = i + 1; j < n; j++) {
+            if (hashes[i] % m == hashes[j] % m)
+                return 0;
+        }
+    }
+    return 1;
+}
+
+int find_min_dim(int *hashes, int n) {
+    for (int m = 1; ; m++) {
+        if (ok_dim(hashes, n, m))
+            return m;
+    }
+}
+
+/* ================= MAIN ================= */
+
+int main() {
+    int m, n;
+    scanf("%d", &m);   // dimensiunea initiala hashmap
+    scanf("%d", &n);   // numar articole
+
+    HashMap *h = create_map(m);
+
+    Node *list_head = NULL, *list_tail = NULL;
+
+    int *hashes = malloc(n * sizeof(int));
+
+    for (int i = 0; i < n; i++) {
+        char den[21], col[21];
+        int mar;
+
+        scanf("%20s %d %20s", den, &mar, col);
+
+        int raw = compute_raw_hash(den, col, mar);
+        hashes[i] = raw;
+
+        /* lista pentru cerinta 1 */
+        Node *x = malloc(sizeof(Node));
+        strcpy(x->denumire, den);
+        strcpy(x->culoare, col);
+        x->marime = mar;
+        x->raw_hash = raw;
+        x->next = NULL;
+
+        if (!list_head)
+            list_head = list_tail = x;
+        else {
+            list_tail->next = x;
+            list_tail = x;
+        }
+
+        /* hashmap pentru cerinta 2 */
+        insert(h, den, mar, col, raw);
+    }
+
+    int cmd;
+    scanf("%d", &cmd);
+
+    if (cmd == 1) {
+        cmd1(list_head);
+    }
+    else if (cmd == 2) {
+        cmd2(h);
+    }
+    else if (cmd == 3) {
+        printf("%d\n", find_min_dim(hashes, n));
+    }
+
+    return 0;
+}

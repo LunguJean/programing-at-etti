@@ -1,0 +1,118 @@
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+
+struct Persoana
+{
+  char nume[10];
+  int id;
+  int semnal_vocal[20];
+};
+
+void afisare(struct Persoana * persoane, int nmr)
+{
+    for(int i=0;i<nmr;i++)
+    {
+        printf("%s\n", (persoane+i)->nume);
+        printf("%d\n", (persoane+i)->id);
+        for(int j=0;j<20;j++)
+        {
+            printf("%d ", persoane[i].semnal_vocal[j]);
+        }
+        printf("\n");
+    }
+}
+
+void putere(struct Persoana * persoane, int nmr)
+{
+    float putere_maxima;
+    int aux = 0;
+    for(int i=0;i<nmr;i++)
+    {
+        float putere = 0;
+        for(int j=0;j<20;j++)
+        {
+            
+            putere = putere + *((persoane + i)->semnal_vocal + j) * (*((persoane + i)->semnal_vocal + j));
+        }
+        putere /= 20;
+        if(putere > putere_maxima)
+        {
+            putere_maxima = putere;
+            aux = i;
+        }
+    }
+    printf("%s\n", (persoane + aux)->nume);
+}
+
+
+void identificare(struct Persoana * persoane, int nmr, int querry)
+{
+    
+    for(int i=0;i<nmr;i++)
+    {
+        if((persoane+i)->id == querry)
+        {
+            printf("%s\n", (persoane+i)->nume);
+        }
+    }
+    
+    
+}
+
+
+int main()
+{
+    int n;
+    int test;
+    
+    scanf("%d", &n);
+    
+    struct Persoana * persoane = malloc(n * sizeof(struct Persoana));
+    if(persoane == NULL)
+    {
+                printf("eroare alocare\n");
+                return 0;
+
+    }
+    for(int i=0;i<n;i++)
+    {
+        scanf("%s", (persoane+i)->nume);
+        scanf("%d", &(persoane+i)->id);
+        
+        for(int j=0;j<20;j++)
+        {
+            scanf("%d", &persoane[i].semnal_vocal[j]);
+        }
+        
+        
+    }
+    
+    
+    scanf("%d", &test);
+    switch(test)
+    {
+        case 1:
+        {
+            afisare(persoane,n);
+            break;
+        }
+        case 2:
+        {
+            
+            putere(persoane, n);
+            
+            break;
+        }
+        case 3:
+        {
+            int q;
+            scanf("%d", &q);
+            identificare(persoane,n,q);
+            break;
+        }
+    }
+    
+    
+    return 0;
+}

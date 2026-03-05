@@ -1,0 +1,103 @@
+#include <stdlib.h>
+#include <stdio.h>
+
+
+struct Jucator
+{
+    char nume[51];
+    int carti[50];
+    int activ;
+};
+
+void afisare(struct Jucator *jucatori, int n)
+{
+    for(int i=0;i<n;i++)
+    {
+        printf("%s ", jucatori[i].nume);
+        for(int j=0;j<n-1;j++)
+        {
+            printf("%d ", jucatori[i].carti[j]);
+        }
+        printf("\n");
+    }
+}
+
+int numarActivi(struct Jucator *jucatori, int n)
+{
+    int i, cnt = 0;
+    for (i = 0; i < n; i++)
+        if (jucatori[i].activ)
+            cnt++;
+    return cnt;
+}
+
+void afisare2(struct Jucator *jucatori, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        if (jucatori[i].activ)
+            printf("%s\n", jucatori[i].nume);
+}
+
+void joacaRunde(struct Jucator *jucatori, int n)
+{
+    int runda = 0;
+
+    while (numarActivi(jucatori, n) > 1) {
+        int i;
+        int minVal = 100;
+        int idxMin = -1;
+
+        for (i = 0; i < n; i++) {
+            if (jucatori[i].activ) {
+                if (jucatori[i].carti[runda] < minVal) {
+                    minVal = jucatori[i].carti[runda];
+                    idxMin = i;
+                }
+            }
+        }
+
+        /* eliminam jucatorul cu cartea minima */
+        jucatori[idxMin].activ = 0;
+
+        /* afisam jucatorii ramasi */
+        afisare2(jucatori, n);
+
+        runda++;
+    }
+}
+
+int main()
+{
+    int n;
+    struct Jucator jucatori[50];
+    
+    int test;
+    scanf("%d %d", &test, &n);
+    
+    for(int i=0;i<n;i++)
+    {
+        scanf("%s", jucatori[i].nume);
+        for(int j=0;j<n-1;j++)
+        {
+            scanf("%d", &jucatori[i].carti[j]);
+        }
+        jucatori[i].activ = 1;
+    }
+    
+    switch(test)
+    {
+        case 1:
+        {
+            afisare(jucatori,n);
+            break;
+        }
+        case 2:
+        {
+            joacaRunde(jucatori, n);
+
+            break;
+        }
+    }
+    
+}

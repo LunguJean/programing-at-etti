@@ -1,0 +1,117 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Strofă {
+    char versuri[4][101];
+};
+
+// Afișare poezie
+void afisare(struct Strofă *s, int n) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < 4; j++)
+            printf("%s\n", s[i].versuri[j]);
+        printf("\n");
+    }
+}
+
+// Obține ultimele 2 litere
+void ultime_doua(char *vers, char *rez) {
+    int n = strlen(vers);
+    rez[0] = vers[n - 2];
+    rez[1] = vers[n - 1];
+    rez[2] = '\0';
+}
+
+// Verificare rimă prima strofă
+void rima(struct Strofă *s) {
+    char a1[3], a2[3], a3[3], a4[3];
+    ultime_doua(s[0].versuri[0], a1);
+    ultime_doua(s[0].versuri[1], a2);
+    ultime_doua(s[0].versuri[2], a3);
+    ultime_doua(s[0].versuri[3], a4);
+    if (strcmp(a1, a4) == 0 && strcmp(a2, a3) == 0)
+        printf("%s-%s-%s-%s\n", a1, a2, a3, a4);
+    else
+        printf("nu\n");
+}
+
+// Inversare strofe
+void inversare(struct Strofă *s, int n) {
+    for (int i = n - 1; i >= 0; i--) {
+        for (int j = 0; j < 4; j++)
+            printf("%s\n", s[i].versuri[j]);
+        printf("\n");
+    }
+}
+
+// Cea mai frecventă rimă
+void cea_mai_frecventa(struct Strofă *s, int n) {
+    char rime[100][3];
+    int frec[100] = {0};
+    int nr = 0;
+
+    for (int i = 0; i < n; i++) {
+        char a1[3], a2[3], a3[3], a4[3];
+        ultime_doua(s[i].versuri[0], a1);
+        ultime_doua(s[i].versuri[1], a2);
+        ultime_doua(s[i].versuri[2], a3);
+        ultime_doua(s[i].versuri[3], a4);
+
+        if (strcmp(a1, a4) == 0 && strcmp(a2, a3) == 0) {
+            int gasit = 0;
+            for (int k = 0; k < nr; k++)
+                if (strcmp(rime[k], a1) == 0) {
+                    frec[k]++;
+                    gasit = 1;
+                    break;
+                }
+            if (!gasit) {
+                strcpy(rime[nr], a1);
+                frec[nr++] = 1;
+            }
+        }
+    }
+
+    int max = 0, poz = 0;
+    for (int i = 0; i < nr; i++)
+        if (frec[i] > max) {
+            max = frec[i];
+            poz = i;
+        }
+
+    printf("%s\n", rime[poz]);
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    getchar();
+
+    struct Strofă *s = malloc(n * sizeof(struct Strofă));
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < 4; j++)
+            fgets(s[i].versuri[j], 101, stdin),
+            s[i].versuri[j][strcspn(s[i].versuri[j], "\n")] = '\0';
+
+    int c;
+    scanf("%d", &c);
+
+    switch (c) {
+        case 1:
+            afisare(s, n);
+            break;
+        case 2:
+            rima(s);
+            break;
+        case 3:
+            inversare(s, n);
+            break;
+        case 4:
+            cea_mai_frecventa(s, n);
+            break;
+    }
+
+    free(s);
+    return 0;
+}

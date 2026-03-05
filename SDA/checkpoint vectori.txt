@@ -1,0 +1,103 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Masina {
+    char nr[11];
+    int banda;
+    int plecare;
+};
+
+// Afișare banda 1, apoi banda 2
+void afisare(struct Masina *m, int n) {
+    for (int i = 0; i < n; i++)
+        if (m[i].banda == 1)
+            printf("%s %d\n", m[i].nr, m[i].plecare);
+    for (int i = 0; i < n; i++)
+        if (m[i].banda == 2)
+            printf("%s %d\n", m[i].nr, m[i].plecare);
+}
+
+// Checkpoint #1
+void checkpoint1(struct Masina *m, int n, int v1, int v2) {
+    int dist, timp;
+    scanf("%d %d", &dist, &timp);
+    for (int i = 0; i < n; i++) {
+        int viteza = (m[i].banda == 1 ? v1 : v2);
+        if (timp > m[i].plecare && (timp - m[i].plecare) * viteza >= dist)
+            printf("%s %d\n", m[i].nr, m[i].plecare);
+    }
+}
+
+// Checkpoint #2
+struct Sosire {
+    char nr[11];
+    float t;
+};
+
+void checkpoint2(struct Masina *m, int n, int v1, int v2) {
+    int dist;
+    scanf("%d", &dist);
+    struct Sosire s[100];
+    for (int i = 0; i < n; i++) {
+        int v = (m[i].banda == 1 ? v1 : v2);
+        s[i].t = (float)dist / v + m[i].plecare;
+        strcpy(s[i].nr, m[i].nr);
+    }
+    for (int i = 0; i < n - 1; i++)
+        for (int j = i + 1; j < n; j++)
+            if (s[i].t > s[j].t) {
+                struct Sosire aux = s[i];
+                s[i] = s[j];
+                s[j] = aux;
+            }
+    for (int i = 0; i < n; i++)
+        printf("%s\n", s[i].nr);
+}
+
+// Checkpoint #3 — contopire
+void checkpoint3(struct Masina *m, int n, int v1, int v2) {
+    int start_lucrari, dist_checkpoint, timp_max, v_lucrari;
+    scanf("%d %d %d %d", &start_lucrari, &dist_checkpoint, &timp_max, &v_lucrari);
+    struct Sosire s[100];
+    int cnt = 0;
+    for (int i = 0; i < n; i++) {
+        int v = (m[i].banda == 1 ? v1 : v2);
+        float t1 = (float)start_lucrari / v + m[i].plecare;
+        float t_total = t1 + (float)(dist_checkpoint - start_lucrari) / v_lucrari;
+        if (t_total <= timp_max) {
+            strcpy(s[cnt].nr, m[i].nr);
+            s[cnt].t = t_total;
+            cnt++;
+        }
+    }
+    for (int i = 0; i < cnt - 1; i++)
+        for (int j = i + 1; j < cnt; j++)
+            if (s[i].t > s[j].t) {
+                struct Sosire aux = s[i];
+                s[i] = s[j];
+                s[j] = aux;
+            }
+    for (int i = 0; i < cnt; i++)
+        printf("%s\n", s[i].nr);
+}
+
+int main() {
+    int v1, v2;
+    scanf("%d %d", &v1, &v2);
+    int n;
+    scanf("%d", &n);
+    struct Masina *m = malloc(n * sizeof(struct Masina));
+    for (int i = 0; i < n; i++)
+        scanf("%s %d %d", m[i].nr, &m[i].banda, &m[i].plecare);
+    int c;
+    scanf("%d", &c);
+    switch (c) {
+        case 1: afisare(m, n); break;
+        case 2: checkpoint1(m, n, v1, v2); break;
+        case 3: checkpoint2(m, n, v1, v2); break;
+        case 4: checkpoint3(m, n, v1, v2); break;
+    }
+    free(m);
+    return 0;
+}

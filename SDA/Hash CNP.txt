@@ -1,0 +1,223 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Node {
+    char nume[21];
+    char cnp[14];      // 13 cifre + '\0'
+    int an2;           // anul nasterii in format YY (cifrele 2 si 3)
+    struct Node *next;
+} Node;
+
+typedef struct {
+    Node **buckets;
+    int size;
+} HashMap;
+
+typedef struct {
+    char nume[21];
+    char cnp[14];
+    int an2;
+    long last6;
+    long hash_raw;     // last6 * an2 (fara modulo)
+} Person;
+
+static void die_alloc(void) {
+    fprintf(stderr, "Eroare alocare memorie.\n");
+    exit(1);
+}
+
+static int get_an2(const char *cnp) {
+    // cifrele 2 si 3 (index 1 si 2) -> YY
+    return (cnp[1] - '0') * 10 + (cnp[2] - '0');
+}
+
+static long get_last6(const char *cnp) {
+    // ultimele 6 cifre: cnp[7..12]
+    // copiem substring ca sa evitam dependenta de locale/format
+    char buf[7];
+    memcpy(buf, cnp + 7, 6);
+    buf[6] = '\0';
+    return strtol(buf, NULL, 10);
+}
+
+static long hash_raw_cnp(const char *cnp) {
+    int an2 = get_an2(cnp);
+    long last6 = get_last6(cnp);
+    return last6 * (long)an2;
+}
+
+static int hash_index(const char *cnp, int capacity) {
+    long raw = hash_raw_cnp(cnp);
+    if (capacity <= 0) return 0;
+    long idx = raw % capacity;
+    if (idx < 0) idx += capacity;
+    return (int)idx;
+}
+
+static Node *node_new(const char *nume, const char *cnp) {
+    Node *p = (Node*)malloc(sizeof(Node));
+    if (!p) die_alloc();
+    strncpy(p->nume, nume, 20);
+    p->nume[20] = '\0';
+    strncpy(p->cnp, cnp, 13);
+    p->cnp[13] = '\0';
+    p->an2 = get_an2(cnp);
+    p->next = NULL;
+    return p;
+}
+
+static HashMap *map_create(int size) {
+    HashMap *map = (HashMap*)malloc(sizeof(HashMap));
+    if (!map) die_alloc();
+    map->size = size;
+    map->buckets = (Node**)calloc((size_t)size, sizeof(Node*));
+    if (!map->buckets) die_alloc();
+    return map;
+}
+
+static void map_free(HashMap *map) {
+    if (!map) return;
+    for (int i = 0; i < map->size; i++) {
+        Node *cur = map->buckets[i];
+        while (cur) {
+            Node *nx = cur->next;
+            free(cur);
+            cur = nx;
+        }
+    }
+    free(map->buckets);
+    free(map);
+}
+
+/*
+ * Inserare in bucket (chaining) in ordine crescatoare dupa an2 (YY).
+ * Se garanteaza ca nu exista 2 persoane cu acelasi an2.
+ */
+static void map_insert_sorted(HashMap *map, const char *nume, const char *cnp) {
+    int idx = hash_index(cnp, map->size);
+    Node *nou = node_new(nume, cnp);
+
+    Node *head = map->buckets[idx];
+    if (!head || nou->an2 < head->an2) {
+        nou->next = head;
+        map->buckets[idx] = nou;
+        return;
+    }
+
+    Node *cur = head;
+    while (cur->next && cur->next->an2 < nou->an2) {
+        cur = cur->next;
+    }
+    nou->next = cur->next;
+    cur->next = nou;
+}
+
+static void print_cmd1(Person *v, int n) {
+    for (int i = 0; i < n; i++) {
+        printf("%s %s\n", v[i].nume, v[i].cnp);
+    }
+}
+
+static void print_cmd2(Person *v, int n, int capacity) {
+    for (int i = 0; i < n; i++) {
+        long idx = v[i].hash_raw % capacity;
+        if (idx < 0) idx += capacity;
+        printf("%ld\n", idx);
+    }
+}
+
+static void print_cmd3(HashMap *map) {
+    for (int i = 0; i < map->size; i++) {
+        printf("%d:", i);
+        Node *cur = map->buckets[i];
+        if (!cur) {
+            printf("\n");
+            continue;
+        }
+        while (cur) {
+            // Conform notei: fiecare intrare urmata de whitespace
+            printf(" %s ", cur->nume);
+            cur = cur->next;
+        }
+        printf("\n");
+    }
+}
+
+static int occupied_buckets_for_capacity(Person *v, int n, int cap) {
+    if (cap <= 0) return 0;
+    char *occ = (char*)calloc((size_t)cap, sizeof(char));
+    if (!occ) die_alloc();
+
+    for (int i = 0; i < n; i++) {
+        long idx = v[i].hash_raw % cap;
+        if (idx < 0) idx += cap;
+        occ[(int)idx] = 1;
+    }
+
+    int cnt = 0;
+    for (int i = 0; i < cap; i++) cnt += occ[i] ? 1 : 0;
+    free(occ);
+    return cnt;
+}
+
+static void print_cmd4(Person *v, int n, double prag) {
+    for (int cap = 1; ; cap++) {
+        int occ = occupied_buckets_for_capacity(v, n, cap);
+        double load = (double)occ / (double)cap;
+        if (load < prag) {
+            printf("%d\n", cap);
+            return;
+        }
+    }
+}
+
+int main(void) {
+    int m;
+    if (scanf("%d", &m) != 1) return 0;
+
+    int n;
+    if (scanf("%d", &n) != 1) return 0;
+
+    Person *v = (Person*)malloc((size_t)n * sizeof(Person));
+    if (!v) die_alloc();
+
+    for (int i = 0; i < n; i++) {
+        if (scanf("%20s", v[i].nume) != 1) die_alloc();
+        if (scanf("%13s", v[i].cnp) != 1) die_alloc();
+
+        v[i].cnp[13] = '\0';
+        v[i].an2 = get_an2(v[i].cnp);
+        v[i].last6 = get_last6(v[i].cnp);
+        v[i].hash_raw = v[i].last6 * (long)v[i].an2;
+    }
+
+    int cmd;
+    if (scanf("%d", &cmd) != 1) {
+        free(v);
+        return 0;
+    }
+
+    if (cmd == 1) {
+        print_cmd1(v, n);
+    } else if (cmd == 2) {
+        print_cmd2(v, n, m);
+    } else if (cmd == 3) {
+        HashMap *map = map_create(m);
+        for (int i = 0; i < n; i++) {
+            map_insert_sorted(map, v[i].nume, v[i].cnp);
+        }
+        print_cmd3(map);
+        map_free(map);
+    } else if (cmd == 4) {
+        double prag;
+        if (scanf("%lf", &prag) != 1) {
+            free(v);
+            return 0;
+        }
+        print_cmd4(v, n, prag);
+    }
+
+    free(v);
+    return 0;
+}

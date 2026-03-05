@@ -1,0 +1,149 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <float.h> // pentru FLT_MAX si FLT_MIN
+#include <limits.h> // pentru INT_MAX si INT_MIN
+#include <math.h>
+
+typedef struct Persoana{
+    char nume[10];
+    int id;
+    int semnal_vocal[20];
+} Persoana;
+
+void citire(Persoana* ptr_persoane, int dim_vector_persoane){
+    for (int i=0; i<dim_vector_persoane; i++){
+        scanf("%s", (ptr_persoane+i)->nume);
+        // scanf("%s", &((ptr_persoane+i)->nume[0]));
+        scanf("%d", &(ptr_persoane+i)->id);
+        for (int j=0; j<20; j++){
+            // scanf("%d", &((ptr_persoane+i)->semnal_vocal[j]));
+            scanf("%d", (ptr_persoane+i)->semnal_vocal+j);
+            // scanf("%d", &ptr_persoane[i].semnal_vocal[j]);
+            // scanf("%d", ptr_persoane[i].semnal_vocal+j);
+        }
+    }
+    
+}
+
+void afisare(Persoana* ptr_persoane, int dim_vector_persoane){
+    for (int i=0; i<dim_vector_persoane; i++){
+        printf("%s\n", (ptr_persoane+i)->nume);
+        printf("%d\n", (ptr_persoane+i)->id);
+        for (int j=0; j<20; j++){
+            printf("%d ", *((ptr_persoane+i)->semnal_vocal+j));
+        }
+        printf("\n");
+    }
+}
+
+void putere_maxima(Persoana* ptr_persoane, int dim_vector_persoane){
+    float putere_maxima = FLT_MIN;
+    int index_persoana_putere_maxima = 0;
+    // int putere_maxima = INT_MIN;
+    
+    for (int i=0; i<dim_vector_persoane; i++){
+        float putere = 0;
+        for (int j=0; j<20; j++){
+            putere += pow(*((ptr_persoane+i)->semnal_vocal+j), 2);
+            // putere += *((ptr_persoane+i)->semnal_vocal+j) * (*((ptr_persoane+i)->semnal_vocal+j));
+        }
+        putere /= 20;
+        
+        if (putere > putere_maxima){
+            putere_maxima = putere;
+            index_persoana_putere_maxima = i;
+        }
+    }
+    
+    printf("%s\n", (ptr_persoane+index_persoana_putere_maxima)->nume);
+    
+}
+
+void afisare_persoana_dupa_query(Persoana* ptr_persoane, int dim_vector_persoane, int query_id){
+    for (int i=0; i<dim_vector_persoane; i++){
+        if ((ptr_persoane+i)->id == query_id){
+            printf("%s\n", (ptr_persoane+i)->nume);
+        }
+    }
+}
+
+
+void distanta_semnale(Persoana* ptr_persoane, int dim_vector_persoane, int semnal_query[20]){
+    float distanta_minima = FLT_MAX;
+    int index_persoana_distanta_minima = 0;
+    
+    for (int i=0; i<dim_vector_persoane; i++){
+        float distanta = 0;
+        for (int j=0; j<20; j++){
+            float rezultat_scadere = *((ptr_persoane+i)->semnal_vocal+j) - semnal_query[j];
+            distanta += pow(rezultat_scadere, 2);
+        }
+        
+        if (distanta < distanta_minima){
+            distanta_minima = distanta;
+            index_persoana_distanta_minima = i;
+        }
+    }
+    
+    printf("%s\n", (ptr_persoane+index_persoana_distanta_minima)->nume);
+}
+
+
+int main(){
+    int nr_persoane;
+    int c;
+    Persoana * persoane = NULL;
+    
+    scanf("%d", &nr_persoane);
+    
+    persoane = malloc(nr_persoane*sizeof(Persoana));
+    
+    citire(persoane, nr_persoane);
+    
+    scanf("%d", &c);
+    
+    switch(c){
+        case 1:{
+            afisare(persoane, nr_persoane);
+            break;
+        }
+        
+        case 2:{
+            putere_maxima(persoane, nr_persoane);
+            break;
+        }
+        
+        case 3:{
+            int query;
+            scanf("%d", &query);
+            afisare_persoana_dupa_query(persoane, nr_persoane, query);
+            break;
+        }
+        
+        case 4:{
+            int query_vector[20];
+            for (int i=0; i<20; i++){
+                scanf("%d", &query_vector[i]);
+            }
+            
+            distanta_semnale(persoane, nr_persoane, query_vector);
+            
+            break;
+        }
+        
+        default:{
+            break;
+        }
+    }
+    
+    return 0;
+}
+
+
+
+
+
+
+
+
+

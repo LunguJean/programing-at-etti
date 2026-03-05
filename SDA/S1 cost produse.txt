@@ -1,0 +1,117 @@
+#include <stdio.h>
+#include <string.h>
+
+struct Client {
+    char nume[51];
+    long totalProduse;
+    long totalSuma;
+};
+
+int gasesteClient(struct Client *clienti, int nr, char nume[])
+{
+    int i;
+    for (i = 0; i < nr; i++) {
+        if (strcmp(clienti[i].nume, nume) == 0)
+            return i;
+    }
+    return -1;
+}
+
+int adaugaClient(struct Client *clienti, int *nr, char nume[])
+{
+    int poz = *nr;
+    strcpy(clienti[poz].nume, nume);
+    clienti[poz].totalProduse = 0;
+    clienti[poz].totalSuma = 0;
+    (*nr)++;
+    return poz;
+}
+
+long costTranzactie(int comanda, long nrProd, long pret)
+{
+    if (comanda == 1) {
+        return nrProd * pret;
+    } else {
+        long platite = nrProd - nrProd / 5;
+        return platite * pret;
+    }
+}
+
+void citesteTranzactii(int comanda, struct Client *clienti, int *nrClienti)
+{
+    char nume[51];
+    long nrProd, pret;
+
+    while (scanf("%s %ld %ld", nume, &nrProd, &pret) == 3) {
+        int idx = gasesteClient(clienti, *nrClienti, nume);
+        if (idx == -1)
+            idx = adaugaClient(clienti, nrClienti, nume);
+
+        clienti[idx].totalProduse += nrProd;
+        clienti[idx].totalSuma += costTranzactie(comanda, nrProd, pret);
+    }
+}
+
+void rezolvaComanda1(struct Client *clienti, int nrClienti)
+{
+    int i, ok = 0;
+
+    for (i = 0; i < nrClienti; i++) {
+        if (clienti[i].totalProduse >= 20 ||
+            clienti[i].totalSuma >= 1000) {
+            printf("%s\n", clienti[i].nume);
+            ok = 1;
+        }
+    }
+
+    if (!ok) printf("-\n");
+}
+
+void rezolvaComanda2(struct Client *clienti, int nrClienti)
+{
+    int folosit[1000];
+    int i, j, gasit = 0;
+
+    for (i = 0; i < 1000; i++) folosit[i] = 0;
+
+    for (i = 0; i < nrClienti; i++) {
+        if (folosit[i]) continue;
+
+        int cnt = 0;
+        for (j = i; j < nrClienti; j++) {
+            if (clienti[j].totalSuma == clienti[i].totalSuma)
+                cnt++;
+        }
+
+        if (cnt >= 2) {
+            for (j = i; j < nrClienti; j++) {
+                if (clienti[j].totalSuma == clienti[i].totalSuma) {
+                    printf("%s ", clienti[j].nume);
+                    folosit[j] = 1;
+                }
+            }
+            printf("\n");
+            gasit = 1;
+        }
+    }
+
+    if (!gasit) printf("-\n");
+}
+
+int main(void)
+{
+    int comanda;
+    struct Client clienti[1000];
+    int nrClienti = 0;
+
+    scanf("%d", &comanda);
+
+    citesteTranzactii(comanda, clienti, &nrClienti);
+
+    if (comanda == 1)
+        rezolvaComanda1(clienti, nrClienti);
+    else
+        rezolvaComanda2(clienti, nrClienti);
+
+    return 0;
+}

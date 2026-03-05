@@ -1,0 +1,152 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Masina {
+    char nr[11];
+    int banda;
+    int plecare;
+    struct Masina *next;
+} Masina;
+
+// Creează o mașină nouă
+Masina *create() {
+    Masina *nou = malloc(sizeof(Masina));
+    scanf("%s", nou->nr);
+    scanf("%d", &nou->banda);
+    scanf("%d", &nou->plecare);
+    nou->next = NULL;
+    return nou;
+}
+
+// Adaugă la finalul listei
+Masina *list(Masina *head) {
+    if (head == NULL)
+        return create();
+    Masina *temp = head;
+    while (temp->next)
+        temp = temp->next;
+    temp->next = create();
+    return head;
+}
+
+// Afișează toate mașinile, banda 1 urmată de banda 2
+void afisare(Masina *head) {
+    Masina *temp = head;
+    while (temp) {
+        if (temp->banda == 1)
+            printf("%s %d\n", temp->nr, temp->plecare);
+        temp = temp->next;
+    }
+    temp = head;
+    while (temp) {
+        if (temp->banda == 2)
+            printf("%s %d\n", temp->nr, temp->plecare);
+        temp = temp->next;
+    }
+}
+
+// Checkpoint #1 — mașinile care au trecut până la un moment dat
+void checkpoint1(Masina *head, int v1, int v2) {
+    int dist, timp;
+    scanf("%d %d", &dist, &timp);
+    Masina *temp = head;
+    while (temp) {
+        int viteza = (temp->banda == 1 ? v1 : v2);
+        if (timp > temp->plecare) {
+            int parcurs = (timp - temp->plecare) * viteza;
+            if (parcurs >= dist)
+                printf("%s %d\n", temp->nr, temp->plecare);
+        }
+        temp = temp->next;
+    }
+}
+
+// Checkpoint #2 — ordinea de sosire
+typedef struct {
+    char nr[11];
+    float t;
+} Sosire;
+
+void checkpoint2(Masina *head, int v1, int v2) {
+    int dist;
+    scanf("%d", &dist);
+    int n = 0;
+    Sosire s[100];
+    Masina *temp = head;
+    while (temp) {
+        float viteza = (temp->banda == 1 ? v1 : v2);
+        s[n].t = (float)dist / viteza + temp->plecare;
+        strcpy(s[n].nr, temp->nr);
+        n++;
+        temp = temp->next;
+    }
+    for (int i = 0; i < n - 1; i++)
+        for (int j = i + 1; j < n; j++)
+            if (s[i].t > s[j].t) {
+                Sosire aux = s[i];
+                s[i] = s[j];
+                s[j] = aux;
+            }
+    for (int i = 0; i < n; i++)
+        printf("%s\n", s[i].nr);
+}
+
+// Checkpoint #3 — contopire benzi
+void checkpoint3(Masina *head, int v1, int v2) {
+    int start_lucrari, dist_checkpoint, timp_max, v_lucrari;
+    scanf("%d %d %d %d", &start_lucrari, &dist_checkpoint, &timp_max, &v_lucrari);
+    Sosire s[100];
+    int n = 0;
+    Masina *temp = head;
+
+    while (temp) {
+        float viteza = (temp->banda == 1 ? v1 : v2);
+        float t_inainte = (float)start_lucrari / viteza + temp->plecare;
+        float t_total = t_inainte + (float)(dist_checkpoint - start_lucrari) / v_lucrari;
+        if (t_total <= timp_max) {
+            strcpy(s[n].nr, temp->nr);
+            s[n].t = t_total;
+            n++;
+        }
+        temp = temp->next;
+    }
+
+    for (int i = 0; i < n - 1; i++)
+        for (int j = i + 1; j < n; j++)
+            if (s[i].t > s[j].t) {
+                Sosire aux = s[i];
+                s[i] = s[j];
+                s[j] = aux;
+            }
+
+    for (int i = 0; i < n; i++)
+        printf("%s\n", s[i].nr);
+}
+
+int main() {
+    int v1, v2;
+    scanf("%d %d", &v1, &v2);
+    int n;
+    scanf("%d", &n);
+    Masina *head = NULL;
+    for (int i = 0; i < n; i++)
+        head = list(head);
+
+    int c;
+    scanf("%d", &c);
+    switch (c) {
+        case 1: afisare(head); break;
+        case 2: checkpoint1(head, v1, v2); break;
+        case 3: checkpoint2(head, v1, v2); break;
+        case 4: checkpoint3(head, v1, v2); break;
+    }
+
+    // Eliberare memorie
+    while (head) {
+        Masina *aux = head;
+        head = head->next;
+        free(aux);
+    }
+    return 0;
+}

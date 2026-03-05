@@ -1,0 +1,84 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct Jucator {
+    char nume[20];
+    int echipa;
+    int hitpoints;
+};
+
+// Afișare echipe
+void afisare(struct Jucator *j, int n) {
+    for (int i = 0; i < n; i++)
+        if (j[i].echipa == 1)
+            printf("%s %d %d\n", j[i].nume, j[i].echipa, j[i].hitpoints);
+    for (int i = 0; i < n; i++)
+        if (j[i].echipa == 2)
+            printf("%s %d %d\n", j[i].nume, j[i].echipa, j[i].hitpoints);
+}
+
+// Cea mai robustă echipă
+void robusta(struct Jucator *j, int n) {
+    int hp1 = 0, hp2 = 0;
+    for (int i = 0; i < n; i++)
+        if (j[i].echipa == 1) hp1 += j[i].hitpoints;
+        else hp2 += j[i].hitpoints;
+    if (hp1 >= hp2) printf("1\n"); else printf("2\n");
+}
+
+// Obține indexul jucătorului valid din echipa dată
+int get_index(struct Jucator *j, int n, int echipa, int index) {
+    int cnt = 0;
+    for (int i = 0; i < n; i++)
+        if (j[i].echipa == echipa && j[i].hitpoints > 0) {
+            if (cnt == index) return i;
+            cnt++;
+        }
+    return -1;
+}
+
+// Eliminare jucători cu 0 HP (doar ignorăm)
+void joc(struct Jucator *j, int n, int mod) {
+    int scor1 = 0, scor2 = 0;
+    int tura = 1;
+    int val;
+
+    while (1) {
+        scanf("%d", &val);
+        if (val == 100) break;
+        if (val == -1) { tura = 3 - tura; continue; }
+
+        int idx = get_index(j, n, 3 - tura, val);
+        if (idx != -1) {
+            j[idx].hitpoints--;
+            if (tura == 1) scor1++; else scor2++;
+        }
+        tura = 3 - tura;
+    }
+
+    if (mod == 0)
+        printf("%d\n%d\n", scor1, scor2);
+    else
+        afisare(j, n);
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    struct Jucator *j = malloc(n * sizeof(struct Jucator));
+    for (int i = 0; i < n; i++)
+        scanf("%s %d %d", j[i].nume, &j[i].echipa, &j[i].hitpoints);
+
+    int c;
+    scanf("%d", &c);
+    switch (c) {
+        case 1: afisare(j, n); break;
+        case 2: robusta(j, n); break;
+        case 3: joc(j, n, 0); break;
+        case 4: joc(j, n, 1); break;
+    }
+
+    free(j);
+    return 0;
+}

@@ -1,0 +1,122 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct LISTA {
+    int date;
+    struct LISTA *urmator;
+};
+
+struct LISTA* inserareNod(struct LISTA *lista);
+void afisareLista(struct LISTA *lista);
+struct LISTA* inserareInaintePrim(struct LISTA *lista, int val);
+void eliberareLista(struct LISTA **lista);
+
+int main(void)
+{
+    int n, i, valNou;
+    struct LISTA *lista = NULL;
+
+    scanf("%d", &n);
+    for (i = 0; i < n; i++) {
+        lista = inserareNod(lista);
+    }
+
+    afisareLista(lista);
+
+    scanf("%d", &valNou);
+    lista = inserareInaintePrim(lista, valNou);
+
+    afisareLista(lista);
+
+    /* Bonus (nu afișează nimic) */
+    eliberareLista(&lista);
+
+    return 0;
+}
+
+/* Creează lista circulară: ultimul nod pointează spre primul */
+struct LISTA* inserareNod(struct LISTA *lista)
+{
+    struct LISTA *nodNou = (struct LISTA*)malloc(sizeof(struct LISTA));
+    struct LISTA *nodCurent;
+
+    if (!nodNou) exit(1);
+
+    scanf("%d", &nodNou->date);
+
+    if (lista == NULL) {
+        nodNou->urmator = nodNou;   /* un singur nod: se leagă la el însuși */
+        return nodNou;
+    }
+
+    nodCurent = lista;
+    while (nodCurent->urmator != lista) {
+        nodCurent = nodCurent->urmator;
+    }
+
+    nodCurent->urmator = nodNou;
+    nodNou->urmator = lista;
+
+    return lista;
+}
+
+/* Afișare corectă pentru listă circulară: do-while până revii la start */
+void afisareLista(struct LISTA *lista)
+{
+    struct LISTA *p;
+
+    if (lista == NULL) return;
+
+    p = lista;
+    do {
+        printf("%d\n", p->date);
+        p = p->urmator;
+    } while (p != lista);
+}
+
+/* Inserează un nod înaintea primului; nodul nou devine "head" */
+struct LISTA* inserareInaintePrim(struct LISTA *lista, int val)
+{
+    struct LISTA *nodNou, *ultim;
+
+    nodNou = (struct LISTA*)malloc(sizeof(struct LISTA));
+    if (!nodNou) exit(1);
+
+    nodNou->date = val;
+
+    if (lista == NULL) {
+        nodNou->urmator = nodNou;
+        return nodNou;
+    }
+
+    /* găsim ultimul (cel care pointează spre lista) */
+    ultim = lista;
+    while (ultim->urmator != lista) {
+        ultim = ultim->urmator;
+    }
+
+    nodNou->urmator = lista; /* nodNou înainte de primul */
+    ultim->urmator = nodNou; /* ultimul îl pointează pe nodNou */
+
+    return nodNou; /* nodNou devine noul head */
+}
+
+/* Bonus: eliberează toată lista circulară fără să printeze nimic */
+void eliberareLista(struct LISTA **lista)
+{
+    struct LISTA *curent, *urm;
+    if (lista == NULL || *lista == NULL) return;
+
+    curent = (*lista)->urmator;
+
+    /* eliberăm toate nodurile în afară de head */
+    while (curent != *lista) {
+        urm = curent->urmator;
+        free(curent);
+        curent = urm;
+    }
+
+    /* eliberăm și head-ul */
+    free(*lista);
+    *lista = NULL;
+}

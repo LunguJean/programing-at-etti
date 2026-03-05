@@ -1,0 +1,275 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef struct Client
+{
+    char nume[20];
+    int produse;
+    struct Client *next;
+} Client;
+
+// 🟢 Creează un client nou și îl citește de la tastatură
+Client *create()
+{
+    Client *nou = malloc(sizeof(Client));
+    scanf("%s %d", nou->nume, &nou->produse);
+    nou->next = NULL;
+    return nou;
+}
+
+// 🟢 Adaugă client la finalul listei
+Client *list(Client *head)
+{
+    if (head == NULL)
+        return create();
+
+    Client *temp = head;
+    while (temp->next)
+        temp = temp->next;
+
+    temp->next = create();
+    return head;
+}
+
+// 🟢 Afișare toți clienții (Comanda 1)
+void afisare(Client *head)
+{
+    while (head)
+    {
+        printf("%s %d\n", head->nume, head->produse);
+        head = head->next;
+    }
+}
+
+// 🟢 Transformă lista în vector pentru procesări (ușurează comenzi 2-4)
+Client *to_array(Client *head, int *n)
+{
+    *n = 0;
+    Client *temp = head;
+    while (temp)
+    {
+        (*n)++;
+        temp = temp->next;
+    }
+
+    Client *arr = malloc((*n) * sizeof(Client));
+    temp = head;
+    for (int i = 0; i < *n; i++)
+    {
+        arr[i] = *temp;
+        temp = temp->next;
+    }
+    return arr;
+}
+
+// 🟢 Distribuire optimă (Comanda 2)
+void distribuire_optim(Client *head, int nr_case)
+{
+    int n;
+    Client *clienti = to_array(head, &n);
+
+    int *total_case = calloc(nr_case, sizeof(int));
+    Client **casele = calloc(nr_case, sizeof(Client*));
+
+    for (int i = 0; i < n; i++)
+    {
+        int min_index = 0;
+        for (int j = 1; j < nr_case; j++)
+            if (total_case[j] < total_case[min_index])
+                min_index = j;
+
+        Client *nou = malloc(sizeof(Client));
+        *nou = clienti[i];
+        nou->next = NULL;
+
+        if (casele[min_index] == NULL)
+            casele[min_index] = nou;
+        else
+        {
+            Client *p = casele[min_index];
+            while (p->next) p = p->next;
+            p->next = nou;
+        }
+
+        total_case[min_index] += clienti[i].produse;
+    }
+
+    // afișare clienți din toate casele
+    for (int i = 0; i < nr_case; i++)
+    {
+        Client *p = casele[i];
+        while (p)
+        {
+            printf("%s %d\n", p->nume, p->produse);
+            p = p->next;
+        }
+    }
+
+    // eliberare memorie
+    for (int i = 0; i < nr_case; i++)
+    {
+        Client *p = casele[i];
+        while (p)
+        {
+            Client *aux = p;
+            p = p->next;
+            free(aux);
+        }
+    }
+
+    free(casele);
+    free(total_case);
+    free(clienti);
+}
+
+// 🟢 Round-Robin (Comanda 3)
+void distribuire_round_robin(Client *head, int nr_case)
+{
+    int n;
+    Client *clienti = to_array(head, &n);
+
+    Client **casele = calloc(nr_case, sizeof(Client*));
+    int *timp = calloc(nr_case, sizeof(int));
+
+    // round-robin simplu
+    for (int i = 0; i < n; i++)
+    {
+        int index = i % nr_case;
+
+        Client *nou = malloc(sizeof(Client));
+        *nou = clienti[i];
+        nou->next = NULL;
+
+        if (casele[index] == NULL)
+            casele[index] = nou;
+        else
+        {
+            Client *p = casele[index];
+            while (p->next) p = p->next;
+            p->next = nou;
+        }
+    }
+
+    // simulare ieșire clienți
+    Client **poz = malloc(nr_case * sizeof(Client*));
+    for (int i = 0; i < nr_case; i++)
+        poz[i] = casele[i];
+
+    int clienti_ramasi = n;
+
+    while (clienti_ramasi > 0)
+    {
+        int min_casa = -1, min_timp = 1e9;
+        for (int i = 0; i < nr_case; i++)
+        {
+            if (poz[i] != NULL)
+            {
+                int t = timp[i] + poz[i]->produse;
+                if (t < min_timp)
+                {
+                    min_timp = t;
+                    min_casa = i;
+                }
+            }
+        }
+
+        printf("%s %d\n", poz[min_casa]->nume, poz[min_casa]->produse);
+        timp[min_casa] += poz[min_casa]->produse;
+        poz[min_casa] = poz[min_casa]->next;
+        clienti_ramasi--;
+    }
+
+    for (int i = 0; i < nr_case; i++)
+    {
+        Client *p = casele[i];
+        while (p)
+        {
+            Client *aux = p;
+            p = p->next;
+            free(aux);
+        }
+    }
+
+    free(casele);
+    free(timp);
+    free(poz);
+    free(clienti);
+}
+
+// 🟢 Timp total (pentru comanda 4)
+int timp_total(Client *head, int nr_case, int mod)
+{
+    int n;
+    Client *clienti = to_array(head, &n);
+    int *total_case = calloc(nr_case, sizeof(int));
+
+    for (int i = 0; i < n; i++)
+    {
+        int index;
+        if (mod == 2)
+        {
+            int min_index = 0;
+            for (int j = 1; j < nr_case; j++)
+                if (total_case[j] < total_case[min_index])
+                    min_index = j;
+            index = min_index;
+        }
+        else
+            index = i % nr_case;
+
+        total_case[index] += clienti[i].produse;
+    }
+
+    int max = total_case[0];
+    for (int i = 1; i < nr_case; i++)
+        if (total_case[i] > max)
+            max = total_case[i];
+
+    free(total_case);
+    free(clienti);
+    return max;
+}
+
+// 🟢 Program principal
+int main()
+{
+    int nr_case, n;
+    scanf("%d %d", &nr_case, &n);
+
+    Client *head = NULL;
+    for (int i = 0; i < n; i++)
+        head = list(head);
+
+    int comanda;
+    scanf("%d", &comanda);
+
+    switch (comanda)
+    {
+        case 1:
+            afisare(head);
+            break;
+        case 2:
+            distribuire_optim(head, nr_case);
+            break;
+        case 3:
+            distribuire_round_robin(head, nr_case);
+            break;
+        case 4: {
+            int t2 = timp_total(head, nr_case, 2);
+            int t3 = timp_total(head, nr_case, 3);
+            printf("%d\n", t2 - t3);
+            break;
+        }
+    }
+
+    // eliberare listă principală
+    while (head)
+    {
+        Client *aux = head;
+        head = head->next;
+        free(aux);
+    }
+
+    return 0;
+}

@@ -1,0 +1,133 @@
+#include <stdio.h>
+#include <string.h>
+
+struct Transfer {
+    char sursa[16];
+    char destinatie[16];
+    int suma;
+};
+
+/* 1 */
+void afisare(struct Transfer *t, int n)
+{
+    for (int i = 0; i < n; i++)
+        printf("%s %s %d\n", t[i].sursa, t[i].destinatie, t[i].suma);
+}
+
+/* 2 */
+void sumaTotala(struct Transfer *t, int n)
+{
+    int s = 0;
+    for (int i = 0; i < n; i++)
+        s += t[i].suma;
+    printf("%d\n", s);
+}
+
+/* 3 */
+void afisareDestinatie(struct Transfer *t, int n, char *sursa)
+{
+    for (int i = 0; i < n; i++) {
+        if (strcmp(t[i].sursa, sursa) == 0) {
+            printf("%s\n", t[i].destinatie);
+            return;
+        }
+    }
+}
+
+/* 4 */
+void afisareLant(struct Transfer *t, int n, char *start)
+{
+    char curent[16];
+    strcpy(curent, start);
+
+    while (1) {
+        int gasit = 0;
+        for (int i = 0; i < n; i++) {
+            if (strcmp(t[i].sursa, curent) == 0) {
+                printf("%s %s %d\n", t[i].sursa, t[i].destinatie, t[i].suma);
+                strcpy(curent, t[i].destinatie);
+                gasit = 1;
+                break;
+            }
+        }
+        if (!gasit)
+            break;
+    }
+}
+
+/* 5 (bonus) */
+void eliminareRedundanta(struct Transfer *t, int n, char *start)
+{
+    int idx[100];
+    int k = 0;
+    int minim;
+
+    char curent[16];
+    strcpy(curent, start);
+
+    /* identificam bucla */
+    while (1) {
+        for (int i = 0; i < n; i++) {
+            if (strcmp(t[i].sursa, curent) == 0) {
+                idx[k++] = i;
+                strcpy(curent, t[i].destinatie);
+                break;
+            }
+        }
+        if (strcmp(curent, start) == 0)
+            break;
+    }
+
+    /* minimul */
+    minim = t[idx[0]].suma;
+    for (int i = 1; i < k; i++)
+        if (t[idx[i]].suma < minim)
+            minim = t[idx[i]].suma;
+
+    /* afisare dupa eliminare */
+    for (int i = 0; i < k; i++) {
+        printf("%s %s %d\n",
+               t[idx[i]].sursa,
+               t[idx[i]].destinatie,
+               t[idx[i]].suma - minim);
+    }
+}
+
+int main(void)
+{
+    int n;
+    struct Transfer transferuri[100];
+    int comanda;
+    char nume[16];
+
+    scanf("%d", &n);
+
+    for (int i = 0; i < n; i++) {
+        scanf("%s", transferuri[i].sursa);
+        scanf("%s", transferuri[i].destinatie);
+        scanf("%d", &transferuri[i].suma);
+    }
+
+    scanf("%d", &comanda);
+
+    if (comanda == 1) {
+        afisare(transferuri, n);
+    }
+    else if (comanda == 2) {
+        sumaTotala(transferuri, n);
+    }
+    else if (comanda == 3) {
+        scanf("%s", nume);
+        afisareDestinatie(transferuri, n, nume);
+    }
+    else if (comanda == 4) {
+        scanf("%s", nume);
+        afisareLant(transferuri, n, nume);
+    }
+    else if (comanda == 5) {
+        scanf("%s", nume);
+        eliminareRedundanta(transferuri, n, nume);
+    }
+
+    return 0;
+}

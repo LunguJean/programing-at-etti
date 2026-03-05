@@ -1,0 +1,107 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct Punct {
+    int x, y;
+};
+
+int valid(int n, int mat[20][20], int x, int y) {
+    return x >= 0 && y >= 0 && x < n && y < n && mat[x][y] != 1;
+}
+
+int main() {
+    int n;
+    scanf("%d", &n);
+    int mat[20][20];
+    for (int i = 0; i < n; i++)
+        for (int j = 0; j < n; j++)
+            scanf("%d", &mat[i][j]);
+
+    int x, y;
+    scanf("%d %d", &x, &y);
+    int comanda;
+    scanf("%d", &comanda);
+
+    getchar();
+
+    if (comanda == 1) {
+        char c;
+        while (scanf("%c", &c) != EOF)
+            if (c != '\n') printf("%c\n", c);
+
+    } else if (comanda == 2) {
+        char c;
+        while (scanf("%c", &c) != EOF) {
+            if (c == '\n') continue;
+            int nx = x, ny = y;
+            if (c == 'u') nx--;
+            if (c == 'd') nx++;
+            if (c == 'l') ny--;
+            if (c == 'r') ny++;
+            if (valid(n, mat, nx, ny)) { x = nx; y = ny; }
+        }
+        printf("%d %d\n", x, y);
+
+    } else if (comanda == 3) {
+        int ex = -1, ey = -1;
+        for (int i = 0; i < n; i++) {
+            if (mat[0][i] == 0) { ex = 0; ey = i; break; }
+            if (mat[n - 1][i] == 0) { ex = n - 1; ey = i; break; }
+            if (mat[i][0] == 0) { ex = i; ey = 0; break; }
+            if (mat[i][n - 1] == 0) { ex = i; ey = n - 1; break; }
+        }
+
+        struct Punct drum[400];
+        int len = 0;
+        int dx[] = {-1, 0, 1, 0};
+        int dy[] = {0, 1, 0, -1};
+        int cx = ex, cy = ey;
+
+        while (!(cx == x && cy == y)) {
+            drum[len].x = cx;
+            drum[len].y = cy;
+            len++;
+            for (int k = 0; k < 4; k++) {
+                int nx = cx + dx[k], ny = cy + dy[k];
+                if (valid(n, mat, nx, ny)) {
+                    cx = nx; cy = ny; break;
+                }
+            }
+        }
+        drum[len++] = (struct Punct){x, y};
+
+        for (int i = 0; i < len; i++)
+            printf("%d %d\n", drum[i].x, drum[i].y);
+
+    } else if (comanda == 4) {
+        struct Punct drum[400];
+        int len = 0;
+
+        int cx = x, cy = y;
+        drum[len++] = (struct Punct){cx, cy};
+        int dx[] = {-1, 0, 1, 0};
+        int dy[] = {0, 1, 0, -1};
+
+        while (1) {
+            int gasit = 0;
+            for (int k = 0; k < 4; k++) {
+                int step = (mat[cx][cy] == 2) ? 2 : 1;
+                int nx = cx + dx[k] * step;
+                int ny = cy + dy[k] * step;
+                if (valid(n, mat, nx, ny)) {
+                    cx = nx; cy = ny;
+                    drum[len++] = (struct Punct){cx, cy};
+                    gasit = 1;
+                    break;
+                }
+            }
+            if (cx == 0 || cy == 0 || cx == n - 1 || cy == n - 1) break;
+            if (!gasit) break;
+        }
+
+        for (int i = 0; i < len; i++)
+            printf("%d %d\n", drum[i].x, drum[i].y);
+    }
+
+    return 0;
+}

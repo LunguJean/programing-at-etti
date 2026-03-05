@@ -1,0 +1,118 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+typedef struct {
+    char name[21];
+    double h;
+} Person;
+
+typedef struct {
+    int used;        // 0 liber, 1 ocupat
+    Person p;
+} Slot;
+
+static int sum_ascii(const char *s){
+    int sum=0;
+    for(int i=0;s[i];i++) sum += (unsigned char)s[i];
+    return sum;
+}
+
+static int hash_idx(const Person *p, int cap){
+    double v = (double)sum_ascii(p->name) * p->h;
+    long long iv = (long long)floor(v);          // partea intreaga
+    int r = (int)(iv % cap);
+    if(r<0) r+=cap;
+    return r;
+}
+
+static Slot* build_table(Person *v, int n, int cap){
+    Slot *t = (Slot*)calloc((size_t)cap, sizeof(Slot));
+    for(int i=0;i<n;i++){
+        int idx = hash_idx(&v[i], cap);
+        while(t[idx].used){
+            idx = (idx+1) % cap;
+        }
+        t[idx].used = 1;
+        t[idx].p = v[i];
+    }
+    return t;
+}
+
+/* cautare cu numarare de strcmp-uri (comparatie = apel strcmp) */
+static int find_comparisons(Slot *t, int cap, const char *name, double h){
+    Person key; strncpy(key.name,name,20); key.name[20]='\0'; key.h=h;
+    int idx = hash_idx(&key, cap);
+    int comps=0;
+    for(int step=0; step<cap; step++){
+        if(!t[idx].used) return comps+1; // nu se intampla (element exista), dar safe
+        comps++;
+        if(strcmp(t[idx].p.name, name)==0) return comps;
+        idx = (idx+1)%cap;
+    }
+    return comps;
+}
+
+static void print_table(Slot *t, int cap){
+    for(int i=0;i<cap;i++){
+        if(t[i].used) printf("%d: %s\n", i, t[i].p.name);
+        else printf("%d:\n", i);
+    }
+}
+
+static long total_comparisons(Slot *t, int cap, Person *v, int n){
+    long total=0;
+    for(int i=0;i<n;i++){
+        int c = find_comparisons(t, cap, v[i].name, v[i].h);
+        total += c;
+    }
+    return total;
+}
+
+int main(void){
+    int cap0,n;
+    if(scanf("%d",&cap0)!=1) return 0;
+    scanf("%d",&n);
+
+    Person *v=(Person*)malloc((size_t)n*sizeof(Person));
+    for(int i=0;i<n;i++){
+        scanf("%20s", v[i].name);
+        scanf("%lf", &v[i].h);
+    }
+
+    int cmd; scanf("%d",&cmd);
+
+    if(cmd==1){
+        for(int i=0;i<n;i++) printf("%s %.2f\n", v[i].name, v[i].h);
+    } else if(cmd==2){
+        Slot *t = build_table(v,n,cap0);
+        print_table(t,cap0);
+        free(t);
+    } else if(cmd==3){
+        Slot *t = build_table(v,n,cap0);
+        for(int i=0;i<n;i++){
+            int c = find_comparisons(t, cap0, v[i].name, v[i].h);
+            printf("%s %d\n", v[i].name, c);
+        }
+        free(t);
+    } else if(cmd==4){
+        int prag; scanf("%d",&prag);
+        int cap = n;                 // start: capacitate = nr elemente
+        while(1){
+            Slot *t = build_table(v,n,cap);
+            long tot = total_comparisons(t,cap,v,n);
+            if(tot < prag){
+                printf("%d\n", cap);
+                print_table(t,cap);
+                free(t);
+                break;
+            }
+            free(t);
+            cap++;
+        }
+    }
+
+    free(v);
+    return 0;
+}

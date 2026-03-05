@@ -1,0 +1,192 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+typedef enum { NEUTRU = 0, AVANSEAZA, INTOARCE, DUBLEAZA } Tip;
+
+typedef struct Node {
+    int cell;            // cheia: numarul celulei
+    Tip tip;             // tip efect
+    int val;             // N (0 pentru dubleaza)
+    struct Node *next;   // chaining
+} Node;
+
+typedef struct {
+    Node **buckets;
+    int size;
+} HashMap;
+
+typedef struct {
+    int cell;
+    Tip tip;
+    int val;
+} Special;
+
+static int hash_int(int key, int size) {
+    if (size <= 0) return 0;
+    int r = key % size;
+    if (r < 0) r += size;
+    return r;
+}
+
+static HashMap *map_create(int size) {
+    HashMap *m = (HashMap*)malloc(sizeof(HashMap));
+    if (!m) exit(1);
+    m->size = size;
+    m->buckets = (Node**)calloc((size_t)size, sizeof(Node*));
+    if (!m->buckets) exit(1);
+    return m;
+}
+
+static Node *node_new(int cell, Tip tip, int val) {
+    Node *p = (Node*)malloc(sizeof(Node));
+    if (!p) exit(1);
+    p->cell = cell;
+    p->tip = tip;
+    p->val = val;
+    p->next = NULL;
+    return p;
+}
+
+static void map_insert(HashMap *m, int cell, Tip tip, int val) {
+    int idx = hash_int(cell, m->size);
+    Node *p = node_new(cell, tip, val);
+    p->next = m->buckets[idx];
+    m->buckets[idx] = p;
+}
+
+static Node *map_find(HashMap *m, int cell) {
+    int idx = hash_int(cell, m->size);
+    Node *cur = m->buckets[idx];
+    while (cur) {
+        if (cur->cell == cell) return cur;
+        cur = cur->next;
+    }
+    return NULL;
+}
+
+static void map_free(HashMap *m) {
+    if (!m) return;
+    for (int i = 0; i < m->size; i++) {
+        Node *cur = m->buckets[i];
+        while (cur) {
+            Node *nx = cur->next;
+            free(cur);
+            cur = nx;
+        }
+    }
+    free(m->buckets);
+    free(m);
+}
+
+static void print_special_line(int cell, Tip tip, int val) {
+    if (tip == DUBLEAZA) {
+        printf("%d dubleaza\n", cell);
+    } else if (tip == AVANSEAZA) {
+        printf("%d avanseaza %d\n", cell, val);
+    } else if (tip == INTOARCE) {
+        printf("%d intoarce %d\n", cell, val);
+    }
+}
+
+/*
+ * Aplica o mutare:
+ * 1) avanseaza cu zarul
+ * 2) daca a aterizat pe o celula speciala, aplica efectul O SINGURA DATA
+ * (nu reaplicam in lant, conform "au efect doar daca aterizeaza pe ele").
+ */
+static int muta(HashMap *map, int pos, int zar) {
+    pos += zar;
+
+    Node *sp = map_find(map, pos);
+    if (sp) {
+        if (sp->tip == AVANSEAZA) pos += sp->val;
+        else if (sp->tip == INTOARCE) pos -= sp->val;
+        else if (sp->tip == DUBLEAZA) pos += zar;
+    }
+
+    if (pos < 0) pos = 0; // safety
+    return pos;
+}
+
+int main(void) {
+    int n;               // nr total celule
+    int x;               // nr celule speciale
+    if (scanf("%d", &n) != 1) return 0;
+    if (scanf("%d", &x) != 1) return 0;
+
+    // Alegem o capacitate pentru HashMap.
+    // Poate fi x sau un numar mai mare; folosim max(x, 1).
+    int cap = (x > 0) ? x : 1;
+    HashMap *map = map_create(cap);
+
+    // pastram ordinea de citire pentru comanda 1
+    Special *arr = (Special*)malloc((size_t)x * sizeof(Special));
+    if (!arr && x > 0) exit(1);
+
+    for (int i = 0; i < x; i++) {
+        int cell;
+        char prop[16];
+        scanf("%d %15s", &cell, prop);
+
+        Tip tip = NEUTRU;
+        int val = 0;
+
+        if (strcmp(prop, "dubleaza") == 0) {
+            tip = DUBLEAZA;
+        } else if (strcmp(prop, "avanseaza") == 0) {
+            tip = AVANSEAZA;
+            scanf("%d", &val);
+        } else if (strcmp(prop, "intoarce") == 0) {
+            tip = INTOARCE;
+            scanf("%d", &val);
+        }
+
+        arr[i].cell = cell;
+        arr[i].tip = tip;
+        arr[i].val = val;
+
+        map_insert(map, cell, tip, val);
+    }
+
+    int cmd;
+    scanf("%d", &cmd);
+
+    if (cmd == 1) {
+        for (int i = 0; i < x; i++)
+            print_special_line(arr[i].cell, arr[i].tip, arr[i].val);
+
+    } else if (cmd == 2) {
+        int cell_cur, zar;
+        scanf("%d %d", &cell_cur, &zar);
+        int rez = muta(map, cell_cur, zar);
+        printf("%d\n", rez);
+
+    } else if (cmd == 3) {
+        int p1 = 0, p2 = 0;
+        int zar;
+        int turn = 1; // 1 -> jucator 1, 2 -> jucator 2
+
+        while (scanf("%d", &zar) == 1) {  // pana la EOF
+            if (turn == 1) {
+                p1 = muta(map, p1, zar);
+                if (p1 >= n) {
+                    printf("1\n%d\n", p2);
+                    break;
+                }
+                turn = 2;
+            } else {
+                p2 = muta(map, p2, zar);
+                if (p2 >= n) {
+                    printf("2\n%d\n", p1);
+                    break;
+                }
+                turn = 1;
+            }
+        }
+    }
+
+    free(arr);
+    map_free(map);
+    return 0;
+}

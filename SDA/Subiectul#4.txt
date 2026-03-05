@@ -1,0 +1,111 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct LISTA {
+    int date;
+    struct LISTA *urmator;
+    struct LISTA *anterior;
+};
+
+struct LISTA* inserareNod(struct LISTA *lista);
+void afisareInversa(struct LISTA *lista);
+struct LISTA* inserarePrim(struct LISTA *lista, int x);
+void stergereLista(struct LISTA **lista);
+
+int main(void)
+{
+    int n, i, x;
+    struct LISTA *lista = NULL;
+
+    scanf("%d", &n);
+    for (i = 0; i < n; i++) {
+        lista = inserareNod(lista);
+    }
+
+    afisareInversa(lista);
+
+    scanf("%d", &x);
+    lista = inserarePrim(lista, x);
+
+    afisareInversa(lista);
+
+    /* Bonus */
+    stergereLista(&lista);
+
+    return 0;
+}
+
+/* Inserare la final (biblioteca data) */
+struct LISTA* inserareNod(struct LISTA *lista)
+{
+    struct LISTA *nodNou, *nodCurent;
+
+    nodNou = (struct LISTA*)malloc(sizeof(struct LISTA));
+    if (!nodNou) exit(1);
+
+    scanf("%d", &nodNou->date);
+    nodNou->urmator = NULL;
+    nodNou->anterior = NULL;
+
+    if (lista == NULL) {
+        return nodNou;
+    }
+
+    nodCurent = lista;
+    while (nodCurent->urmator != NULL)
+        nodCurent = nodCurent->urmator;
+
+    nodCurent->urmator = nodNou;
+    nodNou->anterior = nodCurent;
+
+    return lista;
+}
+
+/* (1) Afisare inversa: de la ultimul nod spre primul */
+void afisareInversa(struct LISTA *lista)
+{
+    struct LISTA *p = lista;
+
+    if (p == NULL) return;
+
+    while (p->urmator != NULL)
+        p = p->urmator;   /* ajungem la ultimul */
+
+    while (p != NULL) {
+        printf("%d\n", p->date);
+        p = p->anterior;
+    }
+}
+
+/* (2) Inserare nod pe prima pozitie */
+struct LISTA* inserarePrim(struct LISTA *lista, int x)
+{
+    struct LISTA *nodNou;
+
+    nodNou = (struct LISTA*)malloc(sizeof(struct LISTA));
+    if (!nodNou) exit(1);
+
+    nodNou->date = x;
+    nodNou->anterior = NULL;
+    nodNou->urmator = lista;
+
+    if (lista != NULL)
+        lista->anterior = nodNou;
+
+    return nodNou; /* devine noul head */
+}
+
+/* Bonus: stergere completa lista */
+void stergereLista(struct LISTA **lista)
+{
+    struct LISTA *p = *lista;
+    struct LISTA *aux;
+
+    while (p != NULL) {
+        aux = p;
+        p = p->urmator;
+        free(aux);
+    }
+
+    *lista = NULL;
+}

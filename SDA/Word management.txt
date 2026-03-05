@@ -1,0 +1,108 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define HSIZE 26
+#define MAXW 21
+#define MAXN 1000
+
+typedef struct BST {
+    char word[MAXW];
+    struct BST *left, *right;
+} BST;
+
+typedef struct {
+    BST *root;
+} Bucket;
+
+int hash(char *w) {
+    return w[0] - 'a';
+}
+
+BST *bst_insert(BST *root, char *w) {
+    if (!root) {
+        BST *n = malloc(sizeof(BST));
+        strcpy(n->word, w);
+        n->left = n->right = NULL;
+        return n;
+    }
+    if (strcmp(w, root->word) < 0)
+        root->left = bst_insert(root->left, w);
+    else
+        root->right = bst_insert(root->right, w);
+    return root;
+}
+
+void preorder(BST *root) {
+    if (!root) return;
+    printf("%s\n", root->word);
+    preorder(root->left);
+    preorder(root->right);
+}
+
+void inorder(BST *root) {
+    if (!root) return;
+    inorder(root->left);
+    printf("%s\n", root->word);
+    inorder(root->right);
+}
+
+int bst_search(BST *root, char *w, int *cnt) {
+    if (!root) return 0;
+    (*cnt)++;
+    int c = strcmp(w, root->word);
+    if (c == 0) return 1;
+    if (c < 0) return bst_search(root->left, w, cnt);
+    return bst_search(root->right, w, cnt);
+}
+
+int main(void) {
+    Bucket map[HSIZE] = {0};
+    char list[MAXN][MAXW];
+    int n = 0;
+
+    // citire cuvinte
+    while (scanf("%20s", list[n]) == 1) {
+        if (strcmp(list[n], "stop") == 0) break;
+        int idx = hash(list[n]);
+        map[idx].root = bst_insert(map[idx].root, list[n]);
+        n++;
+    }
+
+    int cmd;
+    scanf("%d", &cmd);
+
+    // COMANDA 1
+    if (cmd == 1) {
+        char ch;
+        scanf(" %c", &ch);
+        int idx = ch - 'a';
+        preorder(map[idx].root);
+    }
+
+    // COMANDA 2
+    else if (cmd == 2) {
+        for (int i = 0; i < HSIZE; i++)
+            inorder(map[i].root);
+    }
+
+    // COMANDA 3
+    else if (cmd == 3) {
+        char q[MAXW];
+        scanf("%20s", q);
+
+        int cnt_hash = 0;
+        bst_search(map[hash(q)].root, q, &cnt_hash);
+
+        int cnt_list = 0;
+        for (int i = 0; i < n; i++) {
+            cnt_list++;
+            if (strcmp(list[i], q) == 0)
+                break;
+        }
+
+        printf("%d\n%d\n", cnt_hash, cnt_list);
+    }
+
+    return 0;
+}

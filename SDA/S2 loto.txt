@@ -1,0 +1,90 @@
+#include <stdio.h>
+#include <string.h>
+
+struct Jucator {
+    char prenume[31];
+    char nume[31];
+    int numere[100];
+};
+
+/* numara cate numere dintr-o combinatie de 6 se regasesc in cele 6 extrase */
+int nrPotriviri(int *comb, int extrase[6])
+{
+    int cnt = 0;
+    for (int i = 0; i < 6; i++) {
+        for (int j = 0; j < 6; j++) {
+            if (comb[i] == extrase[j]) {
+                cnt++;
+                break;
+            }
+        }
+    }
+    return cnt;
+}
+
+/* calculeaza maximul de numere ghicite pentru un jucator */
+int maximGhicite(struct Jucator *jucatori, int idx, int N, int extrase[6])
+{
+    int max = 0;
+
+    for (int i = 0; i <= N - 6; i++) {
+        int cnt = nrPotriviri(&jucatori[idx].numere[i], extrase);
+        if (cnt > max)
+            max = cnt;
+    }
+
+    return max;
+}
+
+/* afisare pentru comanda 1 */
+void afisareComanda1(struct Jucator *jucatori, int k, int N)
+{
+    for (int i = 0; i < k; i++) {
+        printf("%s %s ", jucatori[i].prenume, jucatori[i].nume);
+        for (int j = 0; j < N; j++)
+            printf("%d ", jucatori[i].numere[j]);
+        printf("\n");
+    }
+}
+
+int main(void)
+{
+    int c, k, N;
+    int extrase[6];
+    struct Jucator jucatori[50];
+
+    /* citire comanda */
+    scanf("%d", &c);
+
+    /* numar jucatori */
+    scanf("%d", &k);
+
+    /* N */
+    scanf("%d", &N);
+
+    /* cele 6 numere extrase */
+    for (int i = 0; i < 6; i++)
+        scanf("%d", &extrase[i]);
+
+    /* citire jucatori */
+    for (int i = 0; i < k; i++) {
+        scanf("%s %s", jucatori[i].prenume, jucatori[i].nume);
+        for (int j = 0; j < N; j++)
+            scanf("%d", &jucatori[i].numere[j]);
+    }
+
+    if (c == 1) {
+        afisareComanda1(jucatori, k, N);
+    }
+    else if (c == 2) {
+        for (int i = 0; i < k; i++) {
+            int max = maximGhicite(jucatori, i, N, extrase);
+            printf("%s %s %d\n",
+                   jucatori[i].prenume,
+                   jucatori[i].nume,
+                   max);
+        }
+    }
+
+    return 0;
+}

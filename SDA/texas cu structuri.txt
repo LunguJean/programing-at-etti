@@ -1,0 +1,188 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+struct JUCATOR {
+    char name[21];
+    int hand_cards[2];
+    int total_cards[7];
+    int best_cards[5];
+    int hand_points;
+};
+
+// sortare crescătoare pentru int
+int cmp_int(const void *a, const void *b) {
+    return (*(int*)a - *(int*)b);
+}
+
+// comanda 1 — afișează jucătorii și cărțile comune
+void print_players(struct JUCATOR *players, int n, int common_cards[5]) {
+    for (int i = 0; i < n; i++) {
+        printf("%s\n", players[i].name);
+        printf("%d %d \n", players[i].hand_cards[0], players[i].hand_cards[1]);
+    }
+    for (int i = 0; i < 5; i++)
+        printf("%d ", common_cards[i]);
+    printf("\n");
+}
+
+// verifică dacă un jucător are chintă (5 consecutive)
+void check_straight(struct JUCATOR player, int common[5]) {
+    int all[7];
+    all[0] = player.hand_cards[0];
+    all[1] = player.hand_cards[1];
+    for (int i = 0; i < 5; i++)
+        all[i + 2] = common[i];
+
+    qsort(all, 7, sizeof(int), cmp_int);
+
+    // elimină duplicate
+    int uniq[7], m = 0;
+    for (int i = 0; i < 7; i++) {
+        if (i == 0 || all[i] != all[i - 1])
+            uniq[m++] = all[i];
+    }
+
+    // caută 5 consecutive
+    for (int i = 0; i <= m - 5; i++) {
+        int ok = 1;
+        for (int j = 0; j < 4; j++) {
+            if (uniq[i + j + 1] != uniq[i + j] + 1)
+                ok = 0;
+        }
+        if (ok) {
+            printf("%s\n", player.name);
+            for (int j = 0; j < 5; j++)
+                printf("%d ", uniq[i + j]);
+            printf("\n");
+            return;
+        }
+    }
+}
+
+// calculează cea mai bună mână (comanda 3)
+void best_hand(struct JUCATOR *p, int common[5]) {
+    int all[7];
+    all[0] = p->hand_cards[0];
+    all[1] = p->hand_cards[1];
+    for (int i = 0; i < 5; i++)
+        all[i + 2] = common[i];
+    qsort(all, 7, sizeof(int), cmp_int);
+
+    int freq[15] = {0};
+    for (int i = 0; i < 7; i++)
+        freq[all[i]]++;
+
+    int idx = 0;
+    p->hand_points = 0;
+
+    // 3 cărți de un fel = 3 puncte
+    for (int v = 2; v <= 14; v++) {
+        if (freq[v] >= 3) {
+            p->hand_points += 3;
+            for (int j = 0; j < 3 && idx < 5; j++)
+                p->best_cards[idx++] = v;
+            freq[v] = 0;
+        }
+    }
+
+    // 2 cărți de un fel = 1 punct
+    for (int v = 2; v <= 14; v++) {
+        if (freq[v] >= 2) {
+            p->hand_points += 1;
+            for (int j = 0; j < 2 && idx < 5; j++)
+                p->best_cards[idx++] = v;
+            freq[v] = 0;
+        }
+    }
+
+    // completăm cu cele mai mari cărți
+    for (int i = 6; i >= 0 && idx < 5; i--) {
+        int v = all[i];
+        if (freq[v] > 0) {
+            p->best_cards[idx++] = v;
+            freq[v]--;
+        }
+    }
+
+    qsort(p->best_cards, 5, sizeof(int), cmp_int);
+}
+
+// compară 2 jucători (pentru sortarea finală)
+int cmp_players(const void *a, const void *b) {
+    struct JUCATOR *x = (struct JUCATOR*)a;
+    struct JUCATOR *y = (struct JUCATOR*)b;
+
+    if (x->hand_points != y->hand_points)
+        return y->hand_points - x->hand_points; // mai multe puncte = mai bun
+
+    for (int i = 4; i >= 0; i--) {
+        if (x->best_cards[i] != y->best_cards[i])
+            return y->best_cards[i] - x->best_cards[i];
+    }
+
+    return 0;
+}
+
+// comanda 3 — afișează cea mai bună mână a fiecărui jucător
+void print_best_hands(struct JUCATOR *players, int n, int common[5]) {
+    for (int i = 0; i < n; i++) {
+        best_hand(&players[i], common);
+        printf("%s\n", players[i].name);
+        for (int j = 0; j < 5; j++)
+            printf("%d ", players[i].best_cards[j]);
+        printf("\n");
+    }
+}
+
+// comanda 4 — afișează jucătorii ordonați după mână
+void print_sorted(struct JUCATOR *players, int n, int common[5]) {
+    for (int i = 0; i < n; i++)
+        best_hand(&players[i], common);
+
+    qsort(players, n, sizeof(struct JUCATOR), cmp_players);
+
+    for (int i = 0; i < n; i++)
+        printf("%s\n", players[i].name);
+}
+
+// MAIN
+int main() {
+    int n;
+    scanf("%d", &n);
+
+    struct JUCATOR *players = malloc(n * sizeof(struct JUCATOR));
+    for (int i = 0; i < n; i++) {
+        scanf("%s", players[i].name);
+        scanf("%d %d", &players[i].hand_cards[0], &players[i].hand_cards[1]);
+    }
+
+    int common_cards[5];
+    for (int i = 0; i < 5; i++)
+        scanf("%d", &common_cards[i]);
+
+    int test;
+    scanf("%d", &test);
+
+    switch (test) {
+        case 1:
+            print_players(players, n, common_cards);
+            break;
+
+        case 2:
+            for (int i = 0; i < n; i++)
+                check_straight(players[i], common_cards);
+            break;
+
+        case 3:
+            print_best_hands(players, n, common_cards);
+            break;
+
+        case 4:
+            print_sorted(players, n, common_cards);
+            break;
+    }
+
+    free(players);
+    return 0;
+}
